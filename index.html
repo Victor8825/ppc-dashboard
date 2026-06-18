@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon PPC Command Center</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f1a; color: #e8e8f0; min-height: 100vh; }
+
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-bottom: 1px solid #2a2a4a; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .header h1 span { color: #f90; }
+  .badge { background: #f90; color: #000; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; }
+  .date-tag { font-size: 12px; color: #888; }
+
+  .tabs { display: flex; background: #16213e; border-bottom: 1px solid #2a2a4a; padding: 0 32px; overflow-x: auto; }
+  .tab { padding: 14px 20px; font-size: 13px; font-weight: 600; color: #888; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
+  .tab:hover { color: #ccc; }
+  .tab.active { color: #f90; border-bottom-color: #f90; }
+
+  .content { padding: 28px 32px; max-width: 1400px; }
+
+  /* KPI cards */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .kpi { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px; }
+  .kpi-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .kpi-value { font-size: 28px; font-weight: 700; color: #fff; }
+  .kpi-change { font-size: 12px; margin-top: 4px; }
+  .up { color: #4caf50; } .down { color: #f44336; } .neutral { color: #888; }
+  .kpi.highlight { border-color: #f90; }
+  .kpi.highlight .kpi-value { color: #f90; }
+
+  /* Tables */
+  .card { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid #2a2a4a; display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 14px; font-weight: 700; color: #fff; }
+  .card-sub { font-size: 12px; color: #888; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid #2a2a4a; background: #131328; }
+  td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid #1e1e38; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1e1e38; }
+
+  /* Status pills */
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .pill-green { background: #1b3a1b; color: #4caf50; }
+  .pill-red { background: #3a1b1b; color: #f44336; }
+  .pill-yellow { background: #3a3000; color: #ffc107; }
+  .pill-blue { background: #1b2a3a; color: #42a5f5; }
+  .pill-orange { background: #3a2800; color: #f90; }
+
+  /* Section panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Bid tool */
+  .bid-row { display: grid; grid-template-columns: 1fr 120px 120px 120px 140px 120px; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #1e1e38; font-size: 13px; }
+  .bid-row:hover { background: #1e1e38; }
+  .bid-row.header-row { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; background: #131328; border-bottom: 1px solid #2a2a4a; }
+  .bid-input { background: #0f0f1a; border: 1px solid #3a3a5a; border-radius: 6px; color: #fff; padding: 5px 8px; font-size: 13px; width: 80px; text-align: right; }
+  .bid-input:focus { outline: none; border-color: #f90; }
+  .change-pct { font-size: 12px; font-weight: 600; }
+  .pct-up { color: #4caf50; }
+  .pct-down { color: #f44336; }
+  .pct-neutral { color: #888; }
+  .confidence { font-size: 11px; }
+
+  .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+
+  /* Progress bar */
+  .bar-wrap { background: #0f0f1a; border-radius: 4px; height: 6px; overflow: hidden; margin-top: 6px; }
+  .bar { height: 100%; border-radius: 4px; }
+  .bar-green { background: #4caf50; }
+  .bar-orange { background: #f90; }
+  .bar-red { background: #f44336; }
+
+  .intent-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .intent-card { background: #131328; border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px; }
+  .intent-title { font-size: 12px; font-weight: 700; color: #f90; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .intent-stat { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; margin-bottom: 5px; }
+  .intent-stat span:last-child { color: #fff; font-weight: 600; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; background: #f90; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-ghost { background: transparent; border: 1px solid #3a3a5a; color: #ccc; }
+  .btn-ghost:hover { border-color: #f90; color: #f90; opacity: 1; }
+  .btn-row { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid #2a2a4a; }
+
+  .formula-box { background: #0f0f1a; border: 1px solid #f90; border-radius: 10px; padding: 16px 20px; margin: 16px 20px; font-family: 'Courier New', monospace; }
+  .formula-box .formula { font-size: 16px; color: #f90; font-weight: 700; margin-bottom: 8px; }
+  .formula-box .explain { font-size: 12px; color: #aaa; line-height: 1.6; }
+
+  .workflow-steps { display: flex; flex-direction: column; gap: 12px; padding: 20px; }
+  .step { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: #f90; color: #000; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .step-num.done { background: #4caf50; }
+  .step-body { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+  .step-desc { font-size: 12px; color: #888; line-height: 1.5; }
+
+  .empty-state { padding: 48px 20px; text-align: center; color: #888; }
+  .empty-icon { font-size: 32px; margin-bottom: 12px; }
+  .empty-title { font-size: 14px; font-weight: 600; color: #ccc; margin-bottom: 6px; }
+  .empty-sub { font-size: 12px; }
+
+  .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 20px; border-bottom: 1px solid #1e1e38; font-size: 13px; }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { color: #aaa; }
+  .settings-value { color: #fff; font-weight: 600; }
+
+  @media (max-width: 768px) {
+    .content { padding: 16px; }
+    .section-grid { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .bid-row { grid-template-columns: 1fr 100px 100px; }
+    .bid-row > :nth-child(n+4) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Amazon PPC <span>Command Center</span></h1>
+    <div class="date-tag" id="dateline">Iron on Patches · Portfolio 51375857896619</div>
+  </div>
+  <span class="badge">DEMO</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showPanel('overview')">📊 Overview</div>
+  <div class="tab" onclick="showPanel('search-terms')">🔍 Search Term Analysis</div>
+  <div class="tab" onclick="showPanel('harvest')">🌾 Keyword Harvest</div>
+  <div class="tab" onclick="showPanel('bids')">💰 Bid Optimizer</div>
+  <div class="tab" onclick="showPanel('settings')">⚙️ Settings</div>
+</div>
+
+<div class="content">
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+    <div class="kpi-row">
+      <div class="kpi highlight">
+        <div class="kpi-label">Target ACOS</div>
+        <div class="kpi-value">35%</div>
+        <div class="kpi-change neutral">Iron on Patches</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Daily Budget</div>
+        <div class="kpi-value">$12</div>
+        <div class="kpi-change neutral">per campaign</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Bid Floor</div>
+        <div class="kpi-value">$0.10</div>
+        <div class="kpi-change neutral">minimum CPC</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Bid Ceiling</div>
+        <div class="kpi-value">$2.00</div>
+        <div class="kpi-change neutral">maximum CPC</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Portfolio ID</div>
+        <div class="kpi-value" style="font-size:14px;margin-top:4px;">51375857896619</div>
+        <div class="kpi-change neutral">Sponsored Products</div>
+      </div>
+    </div>
+
+    <div class="section-grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">5 Workflows — How to Use This System</div>
+        </div>
+        <div class="workflow-steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Search Term Analysis</div>
+              <div class="step-desc">Say "run search term analysis" + attach SP Search Term Report (last 60 days, Summary). Claude builds a 5-section HTML dashboard including shopper intent clusters.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Keyword Harvest & Negation</div>
+              <div class="step-desc">Say "harvest keywords" + same report. Claude categorises every term: Harvest / Negate / Promote / Watch. Do this on a different day from bid optimization.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Bid Adjustment (RPC Method)</div>
+              <div class="step-desc">Say "adjust bids" + Bulk Sheet Export. Claude asks 9 questions, then outputs an interactive HTML dashboard with manual overrides and a REVERSE file.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Campaign Creation</div>
+              <div class="step-desc">Say "create campaigns" + ASIN list. Interactive artifact walks through SKU assigner → bidding assigner → bulk file download.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <div class="step-title">Dayparting</div>
+              <div class="step-desc">Say "run dayparting" + TWO hourly campaign reports (last 14 days + prior 14 days). Prerequisite: 5+ sales/hour.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">RPC Formula — Core Bid Method</div>
+        </div>
+        <div class="formula-box">
+          <div class="formula">Bid = (Revenue ÷ Clicks) × Target ACOS</div>
+          <div class="explain">
+            Revenue = total 7d sales from that keyword<br>
+            Clicks = total clicks for that keyword<br>
+            Target ACOS = your threshold (default 35%)<br><br>
+            <strong style="color:#fff">Example:</strong> $500 revenue, 200 clicks, 35% ACOS<br>
+            → Bid = ($500 ÷ 200) × 0.35 = <strong style="color:#f90">$0.875</strong><br><br>
+            Superior to flat ACOS tiers because it uses your real CVR and AOV.
+          </div>
+        </div>
+        <div class="card-header" style="border-top: 1px solid #2a2a4a; border-bottom: none; margin-top: 8px;">
+          <div class="card-title">Confidence Tiers</div>
+        </div>
+        <table>
+          <thead><tr><th>Tier</th><th>Criteria</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill pill-green">High</span></td><td>≥10 clicks, ≥2 orders</td><td>Full RPC formula</td></tr>
+            <tr><td><span class="pill pill-yellow">Medium</span></td><td>5–9 clicks, ≥1 order</td><td>RPC + safety cap</td></tr>
+            <tr><td><span class="pill pill-red">Low</span></td><td>&lt;5 clicks or 0 orders</td><td>Nudge only (10%)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">System Settings</div>
+        <div class="card-sub">Edit in ⚙️ Settings tab</div>
+      </div>
+      <div class="settings-row"><span class="settings-label">Bidding Strategy</span><span class="settings-value">Dynamic bids — down only</span></div>
+      <div class="settings-row"><span class="settings-label">Harvest Threshold</span><span class="settings-value">≥1 sale AND ACOS ≤35%</span></div>
+      <div class="settings-row"><span class="settings-label">Negate Threshold</span><span class="settings-value">≥$1.00 spend AND 0 sales</span></div>
+      <div class="settings-row"><span class="settings-label">No-Sale Cutoff</span><span class="settings-value">30 days</span></div>
+      <div class="settings-row"><span class="settings-label">Safety Cap (per run)</span><span class="settings-value">30% max change</span></div>
+      <div class="settings-row"><span class="settings-label">Default Nudge Size</span><span class="settings-value">10%</span></div>
+    </div>
+  </div>
+
+  <!-- SEARCH TERMS -->
+  <div class="panel" id="panel-search-terms">
+    <div class="intent-grid">
+      <div class="intent-card">
+        <div class="intent-title">🎁 Gift-Related</div>
+        <div class="intent-stat"><span>Revenue</span><span>$284</span></div>
+        <div class="intent-stat"><span>Avg ACOS</span><span>21%</span></div>
+        <div class="intent-stat"><span>Keywords</span><span>14</span></div>
+        <div class="bar-wrap"><div class="bar bar-green" style="width:79%"></div></div>
+      </div>
+      <div class="intent-card">
+        <div class="intent-title">🧵 Hobby / Craft</div>
+        <div class="intent-stat"><span>Revenue</span><span>$412</span></div>
+        <div class="intent-stat"><span>Avg ACOS</span><span>29%</span></div>
+        <div class="intent-stat"><span>Keywords</span><span>31</span></div>
+        <div class="bar-wrap"><div class="bar bar-green" style="width:65%"></div></div>
+      </div>
+      <div class="intent-card">
+        <div class="intent-title">🎨 Style / Aesthetic</div>
+        <div class="intent-stat"><span>Revenue</span><span>$158</span></div>
+        <div class="intent-stat"><span>Avg ACOS</span><span>38%</span></div>
+        <div class="intent-stat"><span>Keywords</span><span>22</span></div>
+        <div class="bar-wrap"><div class="bar bar-orange" style="width:47%"></div></div>
+      </div>
+      <div class="intent-card">
+        <div class="intent-title">🎒 Occasion / Use</div>
+        <div class="intent-stat"><span>Revenue</span><span>$97</span></div>
+        <div class="intent-stat"><span>Avg ACOS</span><span>51%</span></div>
+        <div class="intent-stat"><span>Keywords</span><span>18</span></div>
+        <div class="bar-wrap"><div class="bar bar-red" style="width:28%"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Top Keywords by Revenue</div>
+        <div class="card-sub">Sample data — run "run search term analysis" with your report</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Keyword</th><th>Revenue</th><th>ACOS</th><th>Orders</th><th>Conv. Rate</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>iron on patches for clothing</td><td>$142</td><td>22%</td><td>18</td><td>8.4%</td><td><span class="pill pill-green">PROMOTE</span></td></tr>
+          <tr><td>2</td><td>patches for jackets iron on</td><td>$98</td><td>28%</td><td>11</td><td>6.1%</td><td><span class="pill pill-blue">HARVEST</span></td></tr>
+          <tr><td>3</td><td>embroidered iron on patches</td><td>$87</td><td>31%</td><td>9</td><td>5.8%</td><td><span class="pill pill-blue">HARVEST</span></td></tr>
+          <tr><td>4</td><td>cute iron on patches</td><td>$64</td><td>35%</td><td>7</td><td>4.9%</td><td><span class="pill pill-yellow">WATCH</span></td></tr>
+          <tr><td>5</td><td>butterfly iron on patch</td><td>$51</td><td>19%</td><td>6</td><td>9.2%</td><td><span class="pill pill-green">PROMOTE</span></td></tr>
+          <tr><td>6</td><td>iron on patch set</td><td>$43</td><td>44%</td><td>5</td><td>3.1%</td><td><span class="pill pill-yellow">WATCH</span></td></tr>
+          <tr><td>7</td><td>patches for backpacks</td><td>$38</td><td>62%</td><td>4</td><td>2.2%</td><td><span class="pill pill-red">NEGATE</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🗑 Wasted Ad Spend</div>
+        <div class="card-sub">≥$1.00 spend, 0 orders</div>
+      </div>
+      <table>
+        <thead><tr><th>Keyword</th><th>Spend</th><th>Clicks</th><th>Impressions</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>sew on patches</td><td style="color:#f44336">$8.40</td><td>31</td><td>1,240</td><td><span class="pill pill-red">NEGATE — Campaign Level</span></td></tr>
+          <tr><td>patches for hats</td><td style="color:#f44336">$5.20</td><td>19</td><td>890</td><td><span class="pill pill-red">NEGATE — Campaign Level</span></td></tr>
+          <tr><td>velcro patches</td><td style="color:#f44336">$3.10</td><td>12</td><td>540</td><td><span class="pill pill-red">NEGATE — Ad Group Level</span></td></tr>
+          <tr><td>patch maker</td><td style="color:#f44336">$1.80</td><td>7</td><td>320</td><td><span class="pill pill-red">NEGATE — Ad Group Level</span></td></tr>
+          <tr><td colspan="2" style="color:#f44336; font-weight:700; font-size:13px;">Total wasted: $18.50</td><td colspan="3" style="color:#888; font-size:12px;">Est. monthly waste: ~$92 if not negated</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- HARVEST -->
+  <div class="panel" id="panel-harvest">
+    <div class="kpi-row" style="grid-template-columns: repeat(4, 1fr);">
+      <div class="kpi"><div class="kpi-label">Harvest</div><div class="kpi-value" style="color:#42a5f5">7</div><div class="kpi-change neutral">move to Exact/Phrase</div></div>
+      <div class="kpi"><div class="kpi-label">Negate</div><div class="kpi-value" style="color:#f44336">4</div><div class="kpi-change neutral">cut bleeders</div></div>
+      <div class="kpi"><div class="kpi-label">Promote</div><div class="kpi-value" style="color:#4caf50">3</div><div class="kpi-change neutral">proven winners</div></div>
+      <div class="kpi"><div class="kpi-label">Watch</div><div class="kpi-value" style="color:#ffc107">5</div><div class="kpi-change neutral">check next cycle</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">🚀 PROMOTE — Proven winners, add to Exact now</div></div>
+      <table>
+        <thead><tr><th>Search Term</th><th>Campaign</th><th>Orders</th><th>ACOS</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>iron on patches for clothing</td><td>IronPatch - Broad</td><td>18</td><td>22%</td><td><span class="pill pill-green">Add to Exact Match</span></td></tr>
+          <tr><td>butterfly iron on patch</td><td>IronPatch - Auto</td><td>6</td><td>19%</td><td><span class="pill pill-green">Add to Exact Match</span></td></tr>
+          <tr><td>embroidered flower patch</td><td>IronPatch - Broad</td><td>5</td><td>23%</td><td><span class="pill pill-green">Add to Exact Match</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">🟢 HARVEST — Add to Exact or Phrase</div></div>
+      <table>
+        <thead><tr><th>Search Term</th><th>Orders</th><th>ACOS</th><th>Rec. Match Type</th></tr></thead>
+        <tbody>
+          <tr><td>patches for jackets iron on</td><td>11</td><td>28%</td><td><span class="pill pill-blue">Exact Match</span></td></tr>
+          <tr><td>embroidered iron on patches</td><td>9</td><td>31%</td><td><span class="pill pill-blue">Exact Match</span></td></tr>
+          <tr><td>cute iron on patches</td><td>7</td><td>35%</td><td><span class="pill pill-yellow">Phrase Match</span></td></tr>
+          <tr><td>iron on patch set</td><td>5</td><td>34%</td><td><span class="pill pill-yellow">Phrase Match</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">🔴 NEGATE — Stop spending here</div></div>
+      <table>
+        <thead><tr><th>Search Term</th><th>Spend</th><th>Level</th><th>Match Type</th></tr></thead>
+        <tbody>
+          <tr><td>sew on patches</td><td style="color:#f44336">$8.40</td><td>Campaign-level</td><td>Negative Exact</td></tr>
+          <tr><td>patches for hats</td><td style="color:#f44336">$5.20</td><td>Campaign-level</td><td>Negative Phrase</td></tr>
+          <tr><td>velcro patches</td><td style="color:#f44336">$3.10</td><td>Ad Group-level</td><td>Negative Exact</td></tr>
+          <tr><td>patch maker</td><td style="color:#f44336">$1.80</td><td>Ad Group-level</td><td>Negative Exact</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BID OPTIMIZER -->
+  <div class="panel" id="panel-bids">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Bid Optimizer — RPC Method</div>
+        <div class="card-sub">Bids calculated using Bid = (Revenue ÷ Clicks) × 35% ACOS</div>
+      </div>
+      <div class="bid-row header-row">
+        <span>Keyword</span>
+        <span>Current Bid</span>
+        <span>New Bid</span>
+        <span>Change</span>
+        <span>Confidence</span>
+        <span>Reason</span>
+      </div>
+      <div id="bid-table"></div>
+      <div class="btn-row">
+        <button class="btn" onclick="recalcBids()">↻ Recalculate All</button>
+        <button class="btn btn-ghost" onclick="downloadBids()">⬇ Download Bulk File</button>
+        <button class="btn btn-ghost" style="border-color:#f44336;color:#f44336;" onclick="downloadReverse()">⬇ Download REVERSE File</button>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:#f44336;">
+      <div class="card-header">
+        <div class="card-title" style="color:#f44336;">⚠️ Critical: Reverse File</div>
+      </div>
+      <div style="padding:16px 20px; font-size:13px; color:#aaa; line-height:1.6;">
+        Always download the REVERSE FILE before uploading bid changes to Amazon. If your account starts tanking after a bid upload, upload the reverse file immediately via Bulk Operations — this restores every bid to exactly where it was before. Zero damage done. Never skip this step.
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="panel-settings">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Account Settings</div></div>
+      <div class="settings-row">
+        <span class="settings-label">Portfolio ID</span>
+        <span class="settings-value">51375857896619</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Default Daily Budget</span>
+        <span class="settings-value">$12.00 per campaign</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Default Starting Bid</span>
+        <span class="settings-value">$0.75</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Bidding Strategy</span>
+        <span class="settings-value">Dynamic bids — down only</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Optimization Thresholds</div></div>
+      <div class="settings-row"><span class="settings-label">Target ACOS</span><span class="settings-value">35%</span></div>
+      <div class="settings-row"><span class="settings-label">Bid Floor (min CPC)</span><span class="settings-value">$0.10</span></div>
+      <div class="settings-row"><span class="settings-label">Bid Ceiling (max CPC)</span><span class="settings-value">$2.00</span></div>
+      <div class="settings-row"><span class="settings-label">Safety Cap per Run</span><span class="settings-value">30% max change</span></div>
+      <div class="settings-row"><span class="settings-label">Nudge Size</span><span class="settings-value">10% (low-confidence keywords)</span></div>
+      <div class="settings-row"><span class="settings-label">No-Sale Cutoff</span><span class="settings-value">30 days</span></div>
+      <div class="settings-row"><span class="settings-label">Harvest Threshold</span><span class="settings-value">≥1 order AND ACOS ≤35%</span></div>
+      <div class="settings-row"><span class="settings-label">Negate Threshold</span><span class="settings-value">≥$1.00 spend AND 0 orders</span></div>
+      <div class="settings-row"><span class="settings-label">Promote Threshold</span><span class="settings-value">≥3 orders AND ACOS ≤25%</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Trigger Phrases</div></div>
+      <table>
+        <thead><tr><th>Say This</th><th>Attach This</th><th>You Get</th></tr></thead>
+        <tbody>
+          <tr><td><code style="color:#f90">run search term analysis</code></td><td>SP Search Term Report (60d, Summary)</td><td>5-section HTML dashboard</td></tr>
+          <tr><td><code style="color:#f90">harvest keywords</code></td><td>SP Search Term Report</td><td>Harvest / Negate / Promote / Watch lists</td></tr>
+          <tr><td><code style="color:#f90">adjust bids</code></td><td>Bulk Sheet Export</td><td>RPC bid dashboard + reverse file</td></tr>
+          <tr><td><code style="color:#f90">create campaigns</code></td><td>ASIN list</td><td>Interactive artifact → bulk upload file</td></tr>
+          <tr><td><code style="color:#f90">run dayparting</code></td><td>Two hourly reports (14d + 14d)</td><td>HTML dashboard + bid schedule</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // Sample bid data
+  const bidData = [
+    { kw: 'iron on patches for clothing', current: 0.75, rev: 142, clicks: 214, orders: 18, conf: 'High' },
+    { kw: 'patches for jackets iron on', current: 0.75, rev: 98, clicks: 180, orders: 11, conf: 'High' },
+    { kw: 'embroidered iron on patches', current: 0.75, rev: 87, clicks: 155, orders: 9, conf: 'High' },
+    { kw: 'cute iron on patches', current: 0.75, rev: 64, clicks: 143, orders: 7, conf: 'High' },
+    { kw: 'butterfly iron on patch', current: 0.65, rev: 51, clicks: 65, orders: 6, conf: 'High' },
+    { kw: 'iron on patch set', current: 0.75, rev: 43, clicks: 98, orders: 5, conf: 'Medium' },
+    { kw: 'flower patches iron on', current: 0.75, rev: 31, clicks: 72, orders: 3, conf: 'Medium' },
+    { kw: 'patches for clothes', current: 0.75, rev: 0, clicks: 3, orders: 0, conf: 'Low' },
+  ];
+
+  const TARGET_ACOS = 0.35;
+  const FLOOR = 0.10;
+  const CEILING = 2.00;
+
+  function calcBid(d) {
+    if (d.clicks < 5 || d.orders === 0) {
+      return Math.min(Math.max(d.current * 1.10, FLOOR), CEILING);
+    }
+    const rpc = d.rev / d.clicks;
+    let bid = rpc * TARGET_ACOS;
+    // Safety cap 30%
+    const maxUp = d.current * 1.30;
+    const maxDown = d.current * 0.70;
+    bid = Math.min(bid, maxUp);
+    bid = Math.max(bid, maxDown);
+    bid = Math.min(Math.max(bid, FLOOR), CEILING);
+    return Math.round(bid * 100) / 100;
+  }
+
+  function renderBids() {
+    const tbl = document.getElementById('bid-table');
+    tbl.innerHTML = '';
+    bidData.forEach(d => {
+      const inputs = tbl.querySelectorAll('.bid-input');
+      const newBid = calcBid(d);
+      const pct = ((newBid - d.current) / d.current * 100).toFixed(1);
+      const pctClass = pct > 0 ? 'pct-up' : pct < 0 ? 'pct-down' : 'pct-neutral';
+      const pctSign = pct > 0 ? '+' : '';
+      const confPill = d.conf === 'High' ? 'pill-green' : d.conf === 'Medium' ? 'pill-yellow' : 'pill-red';
+      const reason = d.clicks < 5 ? 'Low data — nudge up 10%' : d.orders === 0 ? 'No sales — nudge only' : 'RPC formula applied';
+
+      const row = document.createElement('div');
+      row.className = 'bid-row';
+      row.innerHTML = `
+        <span style="color:#e8e8f0">${d.kw}</span>
+        <span>$${d.current.toFixed(2)}</span>
+        <span><input class="bid-input" data-idx="${bidData.indexOf(d)}" value="${newBid.toFixed(2)}" type="number" step="0.01" min="${FLOOR}" max="${CEILING}"></span>
+        <span class="change-pct ${pctClass}">${pctSign}${pct}%</span>
+        <span class="confidence"><span class="pill ${confPill}">${d.conf}</span></span>
+        <span style="color:#888;font-size:12px">${reason}</span>
+      `;
+      tbl.appendChild(row);
+    });
+  }
+
+  function recalcBids() { renderBids(); }
+
+  function downloadBids() {
+    alert('In the real system: Claude generates an Excel bulk upload file with all bid changes, ready to upload to Amazon Ads → Bulk Operations.');
+  }
+  function downloadReverse() {
+    alert('REVERSE FILE: This Excel file contains your ORIGINAL bids. If the account tanks after uploading bid changes, upload this file immediately to restore everything to baseline.');
+  }
+
+  // Init
+  renderBids();
+
+  // Live date
+  const now = new Date();
+  document.getElementById('dateline').textContent = `Iron on Patches · Portfolio 51375857896619 · ${now.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'})}`;
+</script>
+
+</body>
+</html>
