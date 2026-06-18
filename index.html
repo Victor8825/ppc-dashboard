@@ -183,7 +183,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 <!-- ═══ CATALOG ═══ -->
 <div class="panel" id="panel-catalog">
   <div class="controls">
-    <input class="srch" type="text" placeholder="Search name or ASIN…" id="cat-search" oninput="renderCatalog()" autocomplete="off">
+    <input class="srch" type="search" placeholder="Search name or ASIN…" id="cat-search" oninput="renderCatalog()" autocomplete="off">
     <select class="fsel" id="cat-port" onchange="renderCatalog()">
       <option value="">All Portfolios</option>
       <option>Flags</option><option>Child Unisex</option><option>Child Girls</option>
@@ -222,7 +222,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 
   <div id="str-results" style="display:none;">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
-      <input class="srch" type="text" placeholder="Filter keywords…" id="str-search" oninput="filterSTR()" autocomplete="off">
+      <input class="srch" type="search" placeholder="Filter keywords…" id="str-search" oninput="filterSTR()" autocomplete="off">
       <select class="fsel" id="str-flag" onchange="filterSTR()">
         <option value="">All keywords</option>
         <option value="harvest">✓ Harvest candidates</option>
@@ -605,6 +605,7 @@ async function loadSTR(input){
       const rpc=clicks>0?rev/clicks:0;
       return{term,campaign,match,clicks,orders,spend,rev,acos,rpc};
     });
+    document.getElementById('str-search').value='';
     renderSTR();
     renderHarvest();
     document.getElementById('str-upload-zone').style.display='none';
