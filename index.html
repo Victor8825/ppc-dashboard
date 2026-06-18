@@ -143,16 +143,16 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 </div>
 
 <div class="tabs">
-  <div class="tab" onclick="showPanel('overview',this)">📊 Overview</div>
+  <div class="tab active" onclick="showPanel('overview',this)">📊 Overview</div>
   <div class="tab" onclick="showPanel('catalog',this)">📦 Catalog</div>
   <div class="tab" onclick="showPanel('str',this)">🔍 Search Terms</div>
   <div class="tab" onclick="showPanel('harvest',this)">🌾 Harvest</div>
-  <div class="tab active" onclick="showPanel('bids',this)">💰 Bid Optimizer</div>
+  <div class="tab" onclick="showPanel('bids',this)">💰 Bid Optimizer</div>
   <div class="tab" onclick="showPanel('settings',this)">⚙ Settings</div>
 </div>
 
 <!-- ═══ OVERVIEW ═══ -->
-<div class="panel" id="panel-overview">
+<div class="panel active" id="panel-overview">
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-label">Total Products</div><div class="kpi-value" id="kpi-total">99</div><div class="kpi-sub" id="kpi-sub">91 active · 8 clearance · 8 portfolios</div></div>
     <div class="kpi-card"><div class="kpi-label">Target ACoS Range</div><div class="kpi-value">19–22%</div><div class="kpi-sub">$6.99 ~22% · Boho $6.99 ~21%</div></div>
@@ -183,7 +183,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 <!-- ═══ CATALOG ═══ -->
 <div class="panel" id="panel-catalog">
   <div class="controls">
-    <input class="srch" type="text" placeholder="Search name or ASIN…" id="cat-search" oninput="renderCatalog()">
+    <input class="srch" type="text" placeholder="Search name or ASIN…" id="cat-search" oninput="renderCatalog()" autocomplete="off">
     <select class="fsel" id="cat-port" onchange="renderCatalog()">
       <option value="">All Portfolios</option>
       <option>Flags</option><option>Child Unisex</option><option>Child Girls</option>
@@ -222,7 +222,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 
   <div id="str-results" style="display:none;">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
-      <input class="srch" type="text" placeholder="Filter keywords…" id="str-search" oninput="filterSTR()">
+      <input class="srch" type="text" placeholder="Filter keywords…" id="str-search" oninput="filterSTR()" autocomplete="off">
       <select class="fsel" id="str-flag" onchange="filterSTR()">
         <option value="">All keywords</option>
         <option value="harvest">✓ Harvest candidates</option>
@@ -271,7 +271,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 </div>
 
 <!-- ═══ BID OPTIMIZER ═══ -->
-<div class="panel active" id="panel-bids">
+<div class="panel" id="panel-bids">
   <div id="bid-upload-zone">
     <div class="alert ai">
       📥 <strong>What to download:</strong> Amazon Ads → Bulk Operations → Download → Sponsored Products → Download bulk sheet (.tsv). Then upload it below.
