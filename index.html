@@ -1,544 +1,881 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Amazon PPC Command Center</title>
+<title>PPC Command Center — Iron on Patches</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f1a; color: #e8e8f0; min-height: 100vh; }
-
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-bottom: 1px solid #2a2a4a; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
-  .header h1 { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-  .header h1 span { color: #f90; }
-  .badge { background: #f90; color: #000; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; }
-  .date-tag { font-size: 12px; color: #888; }
-
-  .tabs { display: flex; background: #16213e; border-bottom: 1px solid #2a2a4a; padding: 0 32px; overflow-x: auto; }
-  .tab { padding: 14px 20px; font-size: 13px; font-weight: 600; color: #888; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
-  .tab:hover { color: #ccc; }
-  .tab.active { color: #f90; border-bottom-color: #f90; }
-
-  .content { padding: 28px 32px; max-width: 1400px; }
-
-  /* KPI cards */
-  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
-  .kpi { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px; }
-  .kpi-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
-  .kpi-value { font-size: 28px; font-weight: 700; color: #fff; }
-  .kpi-change { font-size: 12px; margin-top: 4px; }
-  .up { color: #4caf50; } .down { color: #f44336; } .neutral { color: #888; }
-  .kpi.highlight { border-color: #f90; }
-  .kpi.highlight .kpi-value { color: #f90; }
-
-  /* Tables */
-  .card { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
-  .card-header { padding: 16px 20px; border-bottom: 1px solid #2a2a4a; display: flex; align-items: center; justify-content: space-between; }
-  .card-title { font-size: 14px; font-weight: 700; color: #fff; }
-  .card-sub { font-size: 12px; color: #888; }
-  table { width: 100%; border-collapse: collapse; }
-  th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid #2a2a4a; background: #131328; }
-  td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid #1e1e38; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #1e1e38; }
-
-  /* Status pills */
-  .pill { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .pill-green { background: #1b3a1b; color: #4caf50; }
-  .pill-red { background: #3a1b1b; color: #f44336; }
-  .pill-yellow { background: #3a3000; color: #ffc107; }
-  .pill-blue { background: #1b2a3a; color: #42a5f5; }
-  .pill-orange { background: #3a2800; color: #f90; }
-
-  /* Section panels */
-  .panel { display: none; }
-  .panel.active { display: block; }
-
-  /* Bid tool */
-  .bid-row { display: grid; grid-template-columns: 1fr 120px 120px 120px 140px 120px; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #1e1e38; font-size: 13px; }
-  .bid-row:hover { background: #1e1e38; }
-  .bid-row.header-row { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; background: #131328; border-bottom: 1px solid #2a2a4a; }
-  .bid-input { background: #0f0f1a; border: 1px solid #3a3a5a; border-radius: 6px; color: #fff; padding: 5px 8px; font-size: 13px; width: 80px; text-align: right; }
-  .bid-input:focus { outline: none; border-color: #f90; }
-  .change-pct { font-size: 12px; font-weight: 600; }
-  .pct-up { color: #4caf50; }
-  .pct-down { color: #f44336; }
-  .pct-neutral { color: #888; }
-  .confidence { font-size: 11px; }
-
-  .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-
-  /* Progress bar */
-  .bar-wrap { background: #0f0f1a; border-radius: 4px; height: 6px; overflow: hidden; margin-top: 6px; }
-  .bar { height: 100%; border-radius: 4px; }
-  .bar-green { background: #4caf50; }
-  .bar-orange { background: #f90; }
-  .bar-red { background: #f44336; }
-
-  .intent-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
-  .intent-card { background: #131328; border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px; }
-  .intent-title { font-size: 12px; font-weight: 700; color: #f90; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .intent-stat { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; margin-bottom: 5px; }
-  .intent-stat span:last-child { color: #fff; font-weight: 600; }
-
-  .btn { display: inline-flex; align-items: center; gap: 6px; background: #f90; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
-  .btn:hover { opacity: 0.85; }
-  .btn-ghost { background: transparent; border: 1px solid #3a3a5a; color: #ccc; }
-  .btn-ghost:hover { border-color: #f90; color: #f90; opacity: 1; }
-  .btn-row { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid #2a2a4a; }
-
-  .formula-box { background: #0f0f1a; border: 1px solid #f90; border-radius: 10px; padding: 16px 20px; margin: 16px 20px; font-family: 'Courier New', monospace; }
-  .formula-box .formula { font-size: 16px; color: #f90; font-weight: 700; margin-bottom: 8px; }
-  .formula-box .explain { font-size: 12px; color: #aaa; line-height: 1.6; }
-
-  .workflow-steps { display: flex; flex-direction: column; gap: 12px; padding: 20px; }
-  .step { display: flex; gap: 14px; align-items: flex-start; }
-  .step-num { width: 28px; height: 28px; border-radius: 50%; background: #f90; color: #000; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-  .step-num.done { background: #4caf50; }
-  .step-body { flex: 1; }
-  .step-title { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 3px; }
-  .step-desc { font-size: 12px; color: #888; line-height: 1.5; }
-
-  .empty-state { padding: 48px 20px; text-align: center; color: #888; }
-  .empty-icon { font-size: 32px; margin-bottom: 12px; }
-  .empty-title { font-size: 14px; font-weight: 600; color: #ccc; margin-bottom: 6px; }
-  .empty-sub { font-size: 12px; }
-
-  .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 20px; border-bottom: 1px solid #1e1e38; font-size: 13px; }
-  .settings-row:last-child { border-bottom: none; }
-  .settings-label { color: #aaa; }
-  .settings-value { color: #fff; font-weight: 600; }
-
-  @media (max-width: 768px) {
-    .content { padding: 16px; }
-    .section-grid { grid-template-columns: 1fr; }
-    .kpi-row { grid-template-columns: 1fr 1fr; }
-    .bid-row { grid-template-columns: 1fr 100px 100px; }
-    .bid-row > :nth-child(n+4) { display: none; }
-  }
+:root{--bg:#0d0d14;--surface:#16161f;--surface2:#1e1e2a;--border:#2a2a3a;--accent:#7c6fff;--accent2:#4fd1c5;--text:#e8e8f0;--muted:#888;--green:#48bb78;--red:#fc8181;--yellow:#f6e05e;--orange:#ed8936;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;font-size:14px;}
+/* HEADER */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.header-left{display:flex;align-items:center;gap:10px;}
+.logo{font-size:18px;font-weight:700;color:var(--accent);}
+.badge{background:#22543d;color:#68d391;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.5px;}
+.dateline{color:var(--muted);font-size:11px;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.btn-pub{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.btn-pub:hover{opacity:.9;}
+.btn-pub.pushing{background:#4a4080;cursor:wait;}
+#pub-status{font-size:11px;color:var(--muted);}
+/* TABS */
+.tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:2px;overflow-x:auto;}
+.tab{padding:9px 14px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-size:13px;white-space:nowrap;transition:all .15s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+/* PANELS */
+.panel{display:none;padding:20px;max-width:1200px;margin:0 auto;}
+.panel.active{display:block;}
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;}
+.kpi-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.kpi-value{font-size:24px;font-weight:700;color:var(--accent);}
+.kpi-sub{color:var(--muted);font-size:11px;margin-top:3px;}
+/* SECTION */
+.section-title{font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text);border-left:3px solid var(--accent);padding-left:9px;}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:var(--surface2);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:7px 9px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.tbl td{padding:7px 9px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;}
+.tbl tr:hover td{background:var(--surface2);}
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;overflow-x:auto;}
+/* PILLS */
+.pill{display:inline-block;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:600;}
+.pg{background:#22543d;color:#68d391;}
+.py{background:#744210;color:#f6e05e;}
+.pr{background:#742a2a;color:#fc8181;}
+.pb{background:#1a365d;color:#63b3ed;}
+.po{background:#7b341e;color:#fbd38d;}
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;background:var(--surface);cursor:pointer;transition:border-color .2s;}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);}
+.upload-zone input[type=file]{display:none;}
+.upload-icon{font-size:28px;margin-bottom:8px;}
+.upload-title{font-weight:600;margin-bottom:4px;}
+.upload-sub{color:var(--muted);font-size:12px;}
+/* BUTTONS */
+.btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn:hover{opacity:.9;}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-green{background:#276749;color:#68d391;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-green:hover{background:#2f855a;}
+/* ALERT */
+.alert{border-radius:6px;padding:10px 13px;font-size:12px;margin-bottom:14px;line-height:1.6;}
+.ai{background:#1a365d;border:1px solid #2b6cb0;color:#90cdf4;}
+.aw{background:#7b341e;border:1px solid #c05621;color:#fbd38d;}
+.ag{background:#1c4532;border:1px solid #276749;color:#9ae6b4;}
+/* PORTFOLIO GRID */
+.port-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.port-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;}
+.port-name{font-size:11px;font-weight:700;color:var(--text);margin-bottom:7px;}
+.port-stat{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:2px;}
+.port-stat span:last-child{color:var(--text);}
+/* SETTINGS */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.s-block{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;}
+.s-block h3{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:12px;}
+.s-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);}
+.s-row:last-child{border-bottom:none;}
+.s-label{color:var(--text);font-size:12px;}
+.s-desc{color:var(--muted);font-size:10px;margin-top:2px;}
+.s-val{color:var(--accent);font-weight:700;font-size:13px;text-align:right;}
+/* TOKEN INPUT */
+.token-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12px;font-family:monospace;width:300px;}
+.token-input:focus{outline:none;border-color:var(--accent);}
+/* BID TABLE */
+.bid-header{display:grid;grid-template-columns:2.5fr .8fr .8fr .8fr .8fr 1.8fr;gap:6px;padding:7px 9px;background:var(--surface2);border:1px solid var(--border);border-radius:6px 6px 0 0;font-size:10px;text-transform:uppercase;color:var(--muted);}
+.bid-row{display:grid;grid-template-columns:2.5fr .8fr .8fr .8fr .8fr 1.8fr;gap:6px;padding:7px 9px;border-bottom:1px solid var(--border);align-items:center;font-size:12px;}
+.bid-row:last-child{border-bottom:none;}
+.bid-input{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:4px;width:62px;font-size:12px;}
+.pcu{color:var(--green);font-weight:600;}
+.pcd{color:var(--red);font-weight:600;}
+.pcn{color:var(--muted);}
+/* STEPS */
+.step-list{display:flex;flex-direction:column;gap:8px;}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start;}
+.step-num{background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.step-title{font-weight:600;font-size:12px;margin-bottom:3px;}
+.step-desc{color:var(--muted);font-size:11px;line-height:1.5;}
+.step-tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:10px;color:var(--accent2);margin-top:4px;font-family:monospace;}
+/* ASIN LINK */
+.asin{color:var(--accent2);text-decoration:none;font-family:monospace;font-size:11px;}
+.asin:hover{text-decoration:underline;}
+/* SEARCH CONTROLS */
+.controls{display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap;}
+.srch{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 11px;color:var(--text);font-size:12px;width:220px;}
+.srch:focus{outline:none;border-color:var(--accent);}
+.fsel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text);font-size:12px;cursor:pointer;}
+/* STR TABLE colors */
+.acos-ok{color:var(--green);}
+.acos-warn{color:var(--yellow);}
+.acos-high{color:var(--orange);}
+.acos-bad{color:var(--red);}
+/* Formula box */
+.formula-box{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;line-height:1.8;font-size:12px;}
+.fl{color:var(--accent2);font-family:monospace;font-size:12px;}
+/* Rows count */
+.rcount{color:var(--muted);font-size:11px;margin-left:auto;}
+/* Highlight badges */
+.badge-harvest{background:#22543d;color:#68d391;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;}
+.badge-negate{background:#742a2a;color:#fc8181;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;}
+.badge-watch{background:#744210;color:#f6e05e;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;}
+/* empty state */
+.empty{text-align:center;padding:40px;color:var(--muted);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div>
-    <h1>Amazon PPC <span>Command Center</span></h1>
-    <div class="date-tag" id="dateline">Iron on Patches · Portfolio 51375857896619</div>
+  <div class="header-left">
+    <div class="logo">⚡ PPC Command Center</div>
+    <div class="badge">LIVE DATA</div>
+    <div class="dateline" id="dateline">Iron on Patches · Portfolio 51375857896619 · June 18, 2026</div>
   </div>
-  <span class="badge">DEMO</span>
+  <div class="header-right">
+    <span id="pub-status"></span>
+    <button class="btn-pub pushing" onclick="publishToGitHub()" id="pub-btn">Pushing…</button>
+  </div>
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="showPanel('overview')">📊 Overview</div>
-  <div class="tab" onclick="showPanel('search-terms')">🔍 Search Term Analysis</div>
-  <div class="tab" onclick="showPanel('harvest')">🌾 Keyword Harvest</div>
-  <div class="tab" onclick="showPanel('bids')">💰 Bid Optimizer</div>
-  <div class="tab" onclick="showPanel('settings')">⚙️ Settings</div>
+  <div class="tab" onclick="showPanel('overview',this)">📊 Overview</div>
+  <div class="tab" onclick="showPanel('catalog',this)">📦 Catalog</div>
+  <div class="tab" onclick="showPanel('str',this)">🔍 Search Terms</div>
+  <div class="tab" onclick="showPanel('harvest',this)">🌾 Harvest</div>
+  <div class="tab" onclick="showPanel('bids',this)">💰 Bid Optimizer</div>
+  <div class="tab active" onclick="showPanel('settings',this)">⚙ Settings</div>
 </div>
 
-<div class="content">
+<!-- ═══ OVERVIEW ═══ -->
+<div class="panel" id="panel-overview">
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-label">Total Products</div><div class="kpi-value" id="kpi-total">99</div><div class="kpi-sub" id="kpi-sub">91 active · 8 clearance · 8 portfolios</div></div>
+    <div class="kpi-card"><div class="kpi-label">Target ACoS Range</div><div class="kpi-value">19–27%</div><div class="kpi-sub">$6.99 ~22% · Boho $7.99 ~26%</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Break-Even</div><div class="kpi-value">~36%</div><div class="kpi-sub">$6.99: 32–40% · $7.99: 40–45%</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Profit / Unit</div><div class="kpi-value">$2.50</div><div class="kpi-sub">Before PPC · after FBA fees</div></div>
+  </div>
+  <div class="section-title">Portfolio Breakdown</div>
+  <div class="port-grid">
+    <div class="port-card"><div class="port-name">🏴 Flags</div><div class="port-stat"><span>Products</span><span id="pc-Flags">17</span></div><div class="port-stat"><span>Target ACoS</span><span>~22%</span></div><div class="port-stat"><span>Profit/unit</span><span>~$2.56</span></div></div>
+    <div class="port-card"><div class="port-name">🐾 Child Unisex</div><div class="port-stat"><span>Products</span><span id="pc-CU">32</span></div><div class="port-stat"><span>Target ACoS</span><span>19–27%</span></div><div class="port-stat"><span>Profit/unit</span><span>$2.26–$3.56</span></div></div>
+    <div class="port-card"><div class="port-name">🌸 Child Girls</div><div class="port-stat"><span>Products</span><span id="pc-CG">7</span></div><div class="port-stat"><span>Target ACoS</span><span>19–23%</span></div><div class="port-stat"><span>Profit/unit</span><span>$2.26–$2.39</span></div></div>
+    <div class="port-card"><div class="port-name">🌿 Boho/Botanical</div><div class="port-stat"><span>Products</span><span id="pc-BB">10</span></div><div class="port-stat"><span>Target ACoS</span><span>24–27%</span></div><div class="port-stat"><span>Profit/unit</span><span>$3.26–$3.47</span></div></div>
+    <div class="port-card"><div class="port-name">🌲 Nature</div><div class="port-stat"><span>Products</span><span id="pc-Nat">21</span></div><div class="port-stat"><span>Target ACoS</span><span>19–24%</span></div><div class="port-stat"><span>Profit/unit</span><span>$2.26–$2.81</span></div></div>
+    <div class="port-card"><div class="port-name">💀 Rok/Tactical</div><div class="port-stat"><span>Products</span><span id="pc-Rok">4</span></div><div class="port-stat"><span>Target ACoS</span><span>~21%</span></div><div class="port-stat"><span>Profit/unit</span><span>$2.44–$2.56</span></div></div>
+    <div class="port-card"><div class="port-name">⚽ Sport</div><div class="port-stat"><span>Products</span><span id="pc-Spt">3</span></div><div class="port-stat"><span>Target ACoS</span><span>22–25%</span></div><div class="port-stat"><span>Profit/unit</span><span>$2.54–$3.26</span></div></div>
+    <div class="port-card"><div class="port-name">😂 Memes + Birthday</div><div class="port-stat"><span>Products</span><span id="pc-Mem">5</span></div><div class="port-stat"><span>Target ACoS</span><span>~21–22%</span></div><div class="port-stat"><span>Profit/unit</span><span>$2.39–$2.56</span></div></div>
+  </div>
+  <div class="section-title">5-Step PPC Workflow</div>
+  <div class="step-list">
+    <div class="step"><div class="step-num">1</div><div><div class="step-title">Search Term Analysis</div><div class="step-desc">Download SP Search Term Report (60d, Summary). Upload directly in the Search Terms tab — instant color-coded analysis.</div><div class="step-tag">Amazon Ads → Reports → SP → Search Term → 60d → Summary</div></div></div>
+    <div class="step"><div class="step-num">2</div><div><div class="step-title">Keyword Harvest &amp; Negation</div><div class="step-desc">Harvest tab auto-populates from uploaded Search Term Report. Converters go to Exact. Bleeders get negated.</div><div class="step-tag">Same report — auto-parsed from Step 1</div></div></div>
+    <div class="step"><div class="step-num">3</div><div><div class="step-title">Bid Adjustment (RPC Method)</div><div class="step-desc">Upload Bulk Sheet in the Bid Optimizer tab. Select product, get RPC-calculated bids, download updated file for Amazon.</div><div class="step-tag">Amazon Ads → Bulk Operations → Download → SP</div></div></div>
+    <div class="step"><div class="step-num">4</div><div><div class="step-title">Campaign Creation</div><div class="step-desc">New products: Close Match Auto + Broad Manual minimum. Portfolio 51375857896619. Say "create campaigns" + ASINs to Claude.</div><div class="step-tag">Skill: create campaigns</div></div></div>
+    <div class="step"><div class="step-num">5</div><div><div class="step-title">Dayparting</div><div class="step-desc">Download Hourly reports. Find zero-convert windows. Apply bid multipliers: +20% peak, −30% dead hours.</div><div class="step-tag">SP Hourly by Day + Hourly by Hour</div></div></div>
+  </div>
+</div>
 
-  <!-- OVERVIEW -->
-  <div class="panel active" id="panel-overview">
-    <div class="kpi-row">
-      <div class="kpi highlight">
-        <div class="kpi-label">Target ACOS</div>
-        <div class="kpi-value">35%</div>
-        <div class="kpi-change neutral">Iron on Patches</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Daily Budget</div>
-        <div class="kpi-value">$12</div>
-        <div class="kpi-change neutral">per campaign</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Bid Floor</div>
-        <div class="kpi-value">$0.10</div>
-        <div class="kpi-change neutral">minimum CPC</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Bid Ceiling</div>
-        <div class="kpi-value">$2.00</div>
-        <div class="kpi-change neutral">maximum CPC</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Portfolio ID</div>
-        <div class="kpi-value" style="font-size:14px;margin-top:4px;">51375857896619</div>
-        <div class="kpi-change neutral">Sponsored Products</div>
-      </div>
+<!-- ═══ CATALOG ═══ -->
+<div class="panel" id="panel-catalog">
+  <div class="controls">
+    <input class="srch" type="text" placeholder="Search name or ASIN…" id="cat-search" oninput="renderCatalog()">
+    <select class="fsel" id="cat-port" onchange="renderCatalog()">
+      <option value="">All Portfolios</option>
+      <option>Flags</option><option>Child Unisex</option><option>Child Girls</option>
+      <option>Boho/Botanical</option><option>Nature</option><option>Rok/Tactical</option>
+      <option>Sport</option><option>Memes</option><option>Birthday</option>
+    </select>
+    <select class="fsel" id="cat-status" onchange="renderCatalog()">
+      <option value="">All</option><option value="active">Active</option><option value="clearance">Clearance</option>
+    </select>
+    <div class="rcount" id="cat-count">99 of 99</div>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Product</th><th>ASIN</th><th>Portfolio</th><th>Price</th><th>Target ACoS</th><th>Break-Even</th><th>Profit/Unit</th><th>Default Bid</th><th>Status</th></tr></thead>
+      <tbody id="catalog-body"><tr><td style="font-weight:500">Great Britain Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PMXHYW" target="_blank">B0D9PMXHYW</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill po">Clearance</span></td></tr><tr><td style="font-weight:500">Hawaii Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PL8BY9" target="_blank">B0D9PL8BY9</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Ireland Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PKTS9L" target="_blank">B0D9PKTS9L</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Canada Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PLYN1D" target="_blank">B0D9PLYN1D</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">USA Texas Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PLQ96Q" target="_blank">B0D9PLQ96Q</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Dominican Republic</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PM1YJW" target="_blank">B0D9PM1YJW</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Greece Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PND4LD" target="_blank">B0D9PND4LD</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill po">Clearance</span></td></tr><tr><td style="font-weight:500">Italy Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PNB2RQ" target="_blank">B0D9PNB2RQ</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Jamaica Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PN37NS" target="_blank">B0D9PN37NS</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Chicago</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PML843" target="_blank">B0D9PML843</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Puerto Rico</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PMBYVK" target="_blank">B0D9PMBYVK</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Colombia Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PL77VH" target="_blank">B0D9PL77VH</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill po">Clearance</span></td></tr><tr><td style="font-weight:500">Mexico Flag</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PM4DHJ" target="_blank">B0D9PM4DHJ</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">22.32%</td><td style="color:var(--yellow)">37.20%</td><td style="color:var(--green)">$2.60</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Texas Come &amp; Take It</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PJLW7N" target="_blank">B0D9PJLW7N</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">22.32%</td><td style="color:var(--yellow)">37.20%</td><td style="color:var(--green)">$2.60</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill po">Clearance</span></td></tr><tr><td style="font-weight:500">Templar Crusader</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PN4Y9Q" target="_blank">B0D9PN4Y9Q</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Duck Kid</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9MS4R8H" target="_blank">B0D9MS4R8H</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill po">Clearance</span></td></tr><tr><td style="font-weight:500">USA Flag Skull</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PL4CDS" target="_blank">B0D9PL4CDS</a></td><td><span class="pill pb" style="font-size:9px">Flags</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Rabbit</td><td><a class="asin" href="https://www.amazon.com/dp/B0D8JN12KX" target="_blank">B0D8JN12KX</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Capybara</td><td><a class="asin" href="https://www.amazon.com/dp/B0FM3LCQNN" target="_blank">B0FM3LCQNN</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Zebra</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9MSSFG5" target="_blank">B0D9MSSFG5</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Ladybug</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PKC3VM" target="_blank">B0D9PKC3VM</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Owl</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKRVZ64M" target="_blank">B0CKRVZ64M</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Lion</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWFV5V1" target="_blank">B0CKWFV5V1</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill po">Clearance</span></td></tr><tr><td style="font-weight:500">Fox</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKTZGFD1" target="_blank">B0CKTZGFD1</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Tiger</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWJ9K4V" target="_blank">B0CKWJ9K4V</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Bee</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKTXBC4S" target="_blank">B0CKTXBC4S</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Panda</td><td><a class="asin" href="https://www.amazon.com/dp/B0FLYQ4ZXW" target="_blank">B0FLYQ4ZXW</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Crab</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9KQZGFQ" target="_blank">B0D9KQZGFQ</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Tractor</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PJGT9H" target="_blank">B0D9PJGT9H</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Banana</td><td><a class="asin" href="https://www.amazon.com/dp/B0D8JM1CVN" target="_blank">B0D8JM1CVN</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">22.32%</td><td style="color:var(--yellow)">37.20%</td><td style="color:var(--green)">$2.60</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Unicorn Head</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PJWVZ1" target="_blank">B0D9PJWVZ1</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">22.32%</td><td style="color:var(--yellow)">37.20%</td><td style="color:var(--green)">$2.60</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Giraffe</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9MV15XH" target="_blank">B0D9MV15XH</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.72%</td><td style="color:var(--yellow)">36.19%</td><td style="color:var(--green)">$2.53</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Shark Cute</td><td><a class="asin" href="https://www.amazon.com/dp/B0DBJB6J8M" target="_blank">B0DBJB6J8M</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.63%</td><td style="color:var(--yellow)">36.05%</td><td style="color:var(--green)">$2.52</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Strong Shark</td><td><a class="asin" href="https://www.amazon.com/dp/B0D8JMWY4V" target="_blank">B0D8JMWY4V</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.80%</td><td style="color:var(--yellow)">36.34%</td><td style="color:var(--green)">$2.54</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Rocket</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PKF3DD" target="_blank">B0D9PKF3DD</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Astronaut</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9P2VV43" target="_blank">B0D9P2VV43</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">22.75%</td><td style="color:var(--yellow)">37.91%</td><td style="color:var(--green)">$2.65</td><td style="color:var(--accent2)">$0.16</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Lightning Bolt</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PJNHFW" target="_blank">B0D9PJNHFW</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.55%</td><td style="color:var(--yellow)">35.91%</td><td style="color:var(--green)">$2.51</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Retro Camera</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PJMY2W" target="_blank">B0D9PJMY2W</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">22.49%</td><td style="color:var(--yellow)">37.48%</td><td style="color:var(--green)">$2.62</td><td style="color:var(--accent2)">$0.16</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Sloth</td><td><a class="asin" href="https://www.amazon.com/dp/B0D8JQJC54" target="_blank">B0D8JQJC54</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">20.26%</td><td style="color:var(--yellow)">33.76%</td><td style="color:var(--green)">$2.36</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Train Kids</td><td><a class="asin" href="https://www.amazon.com/dp/B0D8JQ1W63" target="_blank">B0D8JQ1W63</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">22.49%</td><td style="color:var(--yellow)">37.48%</td><td style="color:var(--green)">$2.62</td><td style="color:var(--accent2)">$0.16</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Sun</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWHCNB1" target="_blank">B0CKWHCNB1</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Squirrel</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWDH97P" target="_blank">B0CKWDH97P</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">20.69%</td><td style="color:var(--yellow)">34.48%</td><td style="color:var(--green)">$2.41</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Dolphin</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWJRLYC" target="_blank">B0CKWJRLYC</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">20.69%</td><td style="color:var(--yellow)">34.48%</td><td style="color:var(--green)">$2.41</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Snowflake</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWM3QX3" target="_blank">B0CKWM3QX3</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">21.12%</td><td style="color:var(--yellow)">35.19%</td><td style="color:var(--green)">$2.46</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Maneki-Cat</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP34LBKQ" target="_blank">B0FP34LBKQ</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Sunflower</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP319YD6" target="_blank">B0FP319YD6</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Elephant</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKTWD6DJ" target="_blank">B0CKTWD6DJ</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">20.86%</td><td style="color:var(--yellow)">34.76%</td><td style="color:var(--green)">$2.43</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Dinosaur</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKRYLTQ5" target="_blank">B0CKRYLTQ5</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Cardinal Bird</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKRXSDFD" target="_blank">B0CKRXSDFD</a></td><td><span class="pill pb" style="font-size:9px">Child Unisex</span></td><td>$7.99</td><td class="acos-ok">26.73%</td><td style="color:var(--yellow)">44.56%</td><td style="color:var(--green)">$3.56</td><td style="color:var(--accent2)">$0.21</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Rainbow</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKTTL81M" target="_blank">B0CKTTL81M</a></td><td><span class="pill pb" style="font-size:9px">Child Girls</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Princess Crown</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKTWQJDZ" target="_blank">B0CKTWQJDZ</a></td><td><span class="pill pb" style="font-size:9px">Child Girls</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Black Girl Magic</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWHMS9L" target="_blank">B0CKWHMS9L</a></td><td><span class="pill pb" style="font-size:9px">Child Girls</span></td><td>$6.99</td><td class="acos-ok">22.63%</td><td style="color:var(--yellow)">37.50%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.16</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Dragonfly</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWJ9FQF" target="_blank">B0CKWJ9FQF</a></td><td><span class="pill pb" style="font-size:9px">Child Girls</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Wild Flowers</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP326TW4" target="_blank">B0FP326TW4</a></td><td><span class="pill pb" style="font-size:9px">Child Girls</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Littleg Meme</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP32YJ51" target="_blank">B0FP32YJ51</a></td><td><span class="pill pb" style="font-size:9px">Child Girls</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Stayw Meme</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP33GYPT" target="_blank">B0FP33GYPT</a></td><td><span class="pill pb" style="font-size:9px">Child Girls</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Deers Boho</td><td><a class="asin" href="https://www.amazon.com/dp/B0GS3CLX3F" target="_blank">B0GS3CLX3F</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">26.06%</td><td style="color:var(--yellow)">43.43%</td><td style="color:var(--green)">$3.47</td><td style="color:var(--accent2)">$0.25</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Fox and Owl Boho</td><td><a class="asin" href="https://www.amazon.com/dp/B0GS3QSPMK" target="_blank">B0GS3QSPMK</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">26.06%</td><td style="color:var(--yellow)">43.43%</td><td style="color:var(--green)">$3.47</td><td style="color:var(--accent2)">$0.25</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Peony Purple</td><td><a class="asin" href="https://www.amazon.com/dp/B0GS3Q23F6" target="_blank">B0GS3Q23F6</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">26.06%</td><td style="color:var(--yellow)">43.43%</td><td style="color:var(--green)">$3.47</td><td style="color:var(--accent2)">$0.25</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Peony Yellow</td><td><a class="asin" href="https://www.amazon.com/dp/B0GS3HGJL3" target="_blank">B0GS3HGJL3</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">26.06%</td><td style="color:var(--yellow)">43.43%</td><td style="color:var(--green)">$3.47</td><td style="color:var(--accent2)">$0.25</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Peacock Botanical</td><td><a class="asin" href="https://www.amazon.com/dp/B0GS3NS3J9" target="_blank">B0GS3NS3J9</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">26.06%</td><td style="color:var(--yellow)">43.43%</td><td style="color:var(--green)">$3.47</td><td style="color:var(--accent2)">$0.25</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Zodiacs Boho</td><td><a class="asin" href="https://www.amazon.com/dp/B0GS3GKWZN" target="_blank">B0GS3GKWZN</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">26.06%</td><td style="color:var(--yellow)">43.43%</td><td style="color:var(--green)">$3.47</td><td style="color:var(--accent2)">$0.25</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Foxes Scandinavian</td><td><a class="asin" href="https://www.amazon.com/dp/B0GS3SHNH8" target="_blank">B0GS3SHNH8</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">26.06%</td><td style="color:var(--yellow)">43.43%</td><td style="color:var(--green)">$3.47</td><td style="color:var(--accent2)">$0.25</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Bluebird Boho</td><td><a class="asin" href="https://www.amazon.com/dp/B0GS3G2NMP" target="_blank">B0GS3G2NMP</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">26.06%</td><td style="color:var(--yellow)">43.43%</td><td style="color:var(--green)">$3.47</td><td style="color:var(--accent2)">$0.25</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Tulip Boho</td><td><a class="asin" href="https://www.amazon.com/dp/B0GS3SLN7T" target="_blank">B0GS3SLN7T</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">26.06%</td><td style="color:var(--yellow)">43.43%</td><td style="color:var(--green)">$3.47</td><td style="color:var(--accent2)">$0.25</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Bear</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKRW5132" target="_blank">B0CKRW5132</a></td><td><span class="pill pb" style="font-size:9px">Boho/Botanical</span></td><td>$7.99</td><td class="acos-ok">24.48%</td><td style="color:var(--yellow)">40.80%</td><td style="color:var(--green)">$3.26</td><td style="color:var(--accent2)">$0.20</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Castle</td><td><a class="asin" href="https://www.amazon.com/dp/B0CLHD8C4B" target="_blank">B0CLHD8C4B</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Campfire Round</td><td><a class="asin" href="https://www.amazon.com/dp/B0DBHSYH75" target="_blank">B0DBHSYH75</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">23.18%</td><td style="color:var(--yellow)">38.63%</td><td style="color:var(--green)">$2.70</td><td style="color:var(--accent2)">$0.16</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Travel Van</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PL6M1S" target="_blank">B0D9PL6M1S</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Ski Goggles</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PKVSFS" target="_blank">B0D9PKVSFS</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">22.66%</td><td style="color:var(--yellow)">37.77%</td><td style="color:var(--green)">$2.64</td><td style="color:var(--accent2)">$0.16</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Colosseum</td><td><a class="asin" href="https://www.amazon.com/dp/B0CLHDBWZ4" target="_blank">B0CLHDBWZ4</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">20.94%</td><td style="color:var(--yellow)">34.91%</td><td style="color:var(--green)">$2.44</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Duck Hunting</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9MTSBD1" target="_blank">B0D9MTSBD1</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">22.58%</td><td style="color:var(--yellow)">37.63%</td><td style="color:var(--green)">$2.63</td><td style="color:var(--accent2)">$0.16</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">German Shepherd</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKRWZ3J1" target="_blank">B0CKRWZ3J1</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">20.94%</td><td style="color:var(--yellow)">34.91%</td><td style="color:var(--green)">$2.44</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Panther</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWG9VPX" target="_blank">B0CKWG9VPX</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Train Nature</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWDN97C" target="_blank">B0CKWDN97C</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">21.20%</td><td style="color:var(--yellow)">35.34%</td><td style="color:var(--green)">$2.47</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Compass</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKRZX8HC" target="_blank">B0CKRZX8HC</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Spaceman Head</td><td><a class="asin" href="https://www.amazon.com/dp/B0CLHF6TPG" target="_blank">B0CLHF6TPG</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">21.12%</td><td style="color:var(--yellow)">35.19%</td><td style="color:var(--green)">$2.46</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Bigfoot</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWCPHP7" target="_blank">B0CKWCPHP7</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">21.12%</td><td style="color:var(--yellow)">35.19%</td><td style="color:var(--green)">$2.46</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Flames</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWFL1QQ" target="_blank">B0CKWFL1QQ</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">19.40%</td><td style="color:var(--yellow)">32.33%</td><td style="color:var(--green)">$2.26</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Campfire</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PLDL2N" target="_blank">B0D9PLDL2N</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">22.58%</td><td style="color:var(--yellow)">37.63%</td><td style="color:var(--green)">$2.63</td><td style="color:var(--accent2)">$0.16</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Earth Globe</td><td><a class="asin" href="https://www.amazon.com/dp/B0CLHDMDZB" target="_blank">B0CLHDMDZB</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">20.69%</td><td style="color:var(--yellow)">34.48%</td><td style="color:var(--green)">$2.41</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Mountain</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWJPP7G" target="_blank">B0CKWJPP7G</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">24.03%</td><td style="color:var(--yellow)">40.06%</td><td style="color:var(--green)">$2.80</td><td style="color:var(--accent2)">$0.17</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Tree of Life</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWMGPVN" target="_blank">B0CKWMGPVN</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">24.12%</td><td style="color:var(--yellow)">40.20%</td><td style="color:var(--green)">$2.81</td><td style="color:var(--accent2)">$0.17</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Goose Meme</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP2SHF5T" target="_blank">B0FP2SHF5T</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Dino Meme</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP2NFXZ2" target="_blank">B0FP2NFXZ2</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Fishing Meme</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP2ZGLYS" target="_blank">B0FP2ZGLYS</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">It's Fine Meme</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP31BWP5" target="_blank">B0FP31BWP5</a></td><td><span class="pill pb" style="font-size:9px">Nature</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Skull Gothic</td><td><a class="asin" href="https://www.amazon.com/dp/B0CKWJFBZQ" target="_blank">B0CKWJFBZQ</a></td><td><span class="pill pb" style="font-size:9px">Rok/Tactical</span></td><td>$6.99</td><td class="acos-ok">20.94%</td><td style="color:var(--yellow)">34.91%</td><td style="color:var(--green)">$2.44</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Punisher Skull</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9MTB5PB" target="_blank">B0D9MTB5PB</a></td><td><span class="pill pb" style="font-size:9px">Rok/Tactical</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Skull Mom</td><td><a class="asin" href="https://www.amazon.com/dp/B0DBHZWXSV" target="_blank">B0DBHZWXSV</a></td><td><span class="pill pb" style="font-size:9px">Rok/Tactical</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Pumpkin</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9P37QYR" target="_blank">B0D9P37QYR</a></td><td><span class="pill pb" style="font-size:9px">Rok/Tactical</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Soccer Ball</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9PJRJ6C" target="_blank">B0D9PJRJ6C</a></td><td><span class="pill pb" style="font-size:9px">Sport</span></td><td>$6.99</td><td class="acos-ok">22.32%</td><td style="color:var(--yellow)">37.20%</td><td style="color:var(--green)">$2.60</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill po">Clearance</span></td></tr><tr><td style="font-weight:500">Baseball Set</td><td><a class="asin" href="https://www.amazon.com/dp/B0D9KNY4Z7" target="_blank">B0D9KNY4Z7</a></td><td><span class="pill pb" style="font-size:9px">Sport</span></td><td>$8.99</td><td class="acos-ok">21.76%</td><td style="color:var(--yellow)">36.26%</td><td style="color:var(--green)">$3.26</td><td style="color:var(--accent2)">$0.20</td><td><span class="pill po">Clearance</span></td></tr><tr><td style="font-weight:500">Baseball Bat</td><td><a class="asin" href="https://www.amazon.com/dp/B0DBJ1GJD3" target="_blank">B0DBJ1GJD3</a></td><td><span class="pill pb" style="font-size:9px">Sport</span></td><td>$6.99</td><td class="acos-ok">25.44%</td><td style="color:var(--yellow)">36.34%</td><td style="color:var(--green)">$2.54</td><td style="color:var(--accent2)">$0.18</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Birthday 1 Blue</td><td><a class="asin" href="https://www.amazon.com/dp/B0DBM887P7" target="_blank">B0DBM887P7</a></td><td><span class="pill pb" style="font-size:9px">Birthday</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Birthday 2 Blue</td><td><a class="asin" href="https://www.amazon.com/dp/B0DBMB3MKD" target="_blank">B0DBMB3MKD</a></td><td><span class="pill pb" style="font-size:9px">Birthday</span></td><td>$6.99</td><td class="acos-ok">21.97%</td><td style="color:var(--yellow)">36.62%</td><td style="color:var(--green)">$2.56</td><td style="color:var(--accent2)">$0.15</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Mouse Meme</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP33WMW4" target="_blank">B0FP33WMW4</a></td><td><span class="pill pb" style="font-size:9px">Memes</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Cat Meme</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP2RDVH6" target="_blank">B0FP2RDVH6</a></td><td><span class="pill pb" style="font-size:9px">Memes</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr><tr><td style="font-weight:500">Pride Meme</td><td><a class="asin" href="https://www.amazon.com/dp/B0FP2N4RKM" target="_blank">B0FP2N4RKM</a></td><td><span class="pill pb" style="font-size:9px">Memes</span></td><td>$6.99</td><td class="acos-ok">20.52%</td><td style="color:var(--yellow)">34.19%</td><td style="color:var(--green)">$2.39</td><td style="color:var(--accent2)">$0.14</td><td><span class="pill pg">Active</span></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ SEARCH TERMS ═══ -->
+<div class="panel" id="panel-str">
+  <div id="str-upload-zone">
+    <div class="alert ai">
+      📥 <strong>What to download:</strong> Amazon Ads → Reports → Sponsored Products → Search Term → Date range: <strong>60 days</strong> → Format: <strong>Summary</strong> → Download (.tsv file)
     </div>
-
-    <div class="section-grid">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">5 Workflows — How to Use This System</div>
-        </div>
-        <div class="workflow-steps">
-          <div class="step">
-            <div class="step-num">1</div>
-            <div class="step-body">
-              <div class="step-title">Search Term Analysis</div>
-              <div class="step-desc">Say "run search term analysis" + attach SP Search Term Report (last 60 days, Summary). Claude builds a 5-section HTML dashboard including shopper intent clusters.</div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num">2</div>
-            <div class="step-body">
-              <div class="step-title">Keyword Harvest & Negation</div>
-              <div class="step-desc">Say "harvest keywords" + same report. Claude categorises every term: Harvest / Negate / Promote / Watch. Do this on a different day from bid optimization.</div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num">3</div>
-            <div class="step-body">
-              <div class="step-title">Bid Adjustment (RPC Method)</div>
-              <div class="step-desc">Say "adjust bids" + Bulk Sheet Export. Claude asks 9 questions, then outputs an interactive HTML dashboard with manual overrides and a REVERSE file.</div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num">4</div>
-            <div class="step-body">
-              <div class="step-title">Campaign Creation</div>
-              <div class="step-desc">Say "create campaigns" + ASIN list. Interactive artifact walks through SKU assigner → bidding assigner → bulk file download.</div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num">5</div>
-            <div class="step-body">
-              <div class="step-title">Dayparting</div>
-              <div class="step-desc">Say "run dayparting" + TWO hourly campaign reports (last 14 days + prior 14 days). Prerequisite: 5+ sales/hour.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">RPC Formula — Core Bid Method</div>
-        </div>
-        <div class="formula-box">
-          <div class="formula">Bid = (Revenue ÷ Clicks) × Target ACOS</div>
-          <div class="explain">
-            Revenue = total 7d sales from that keyword<br>
-            Clicks = total clicks for that keyword<br>
-            Target ACOS = your threshold (default 35%)<br><br>
-            <strong style="color:#fff">Example:</strong> $500 revenue, 200 clicks, 35% ACOS<br>
-            → Bid = ($500 ÷ 200) × 0.35 = <strong style="color:#f90">$0.875</strong><br><br>
-            Superior to flat ACOS tiers because it uses your real CVR and AOV.
-          </div>
-        </div>
-        <div class="card-header" style="border-top: 1px solid #2a2a4a; border-bottom: none; margin-top: 8px;">
-          <div class="card-title">Confidence Tiers</div>
-        </div>
-        <table>
-          <thead><tr><th>Tier</th><th>Criteria</th><th>Action</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pill pill-green">High</span></td><td>≥10 clicks, ≥2 orders</td><td>Full RPC formula</td></tr>
-            <tr><td><span class="pill pill-yellow">Medium</span></td><td>5–9 clicks, ≥1 order</td><td>RPC + safety cap</td></tr>
-            <tr><td><span class="pill pill-red">Low</span></td><td>&lt;5 clicks or 0 orders</td><td>Nudge only (10%)</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">System Settings</div>
-        <div class="card-sub">Edit in ⚙️ Settings tab</div>
-      </div>
-      <div class="settings-row"><span class="settings-label">Bidding Strategy</span><span class="settings-value">Dynamic bids — down only</span></div>
-      <div class="settings-row"><span class="settings-label">Harvest Threshold</span><span class="settings-value">≥1 sale AND ACOS ≤35%</span></div>
-      <div class="settings-row"><span class="settings-label">Negate Threshold</span><span class="settings-value">≥$1.00 spend AND 0 sales</span></div>
-      <div class="settings-row"><span class="settings-label">No-Sale Cutoff</span><span class="settings-value">30 days</span></div>
-      <div class="settings-row"><span class="settings-label">Safety Cap (per run)</span><span class="settings-value">30% max change</span></div>
-      <div class="settings-row"><span class="settings-label">Default Nudge Size</span><span class="settings-value">10%</span></div>
-    </div>
+    <label class="upload-zone" id="str-drop">
+      <input type="file" id="str-file" accept=".tsv,.csv,.txt" onchange="loadSTR(this)">
+      <div class="upload-icon">📋</div>
+      <div class="upload-title">Upload SP Search Term Report</div>
+      <div class="upload-sub">Drag &amp; drop or click to select · .tsv or .csv</div>
+    </label>
   </div>
 
-  <!-- SEARCH TERMS -->
-  <div class="panel" id="panel-search-terms">
-    <div class="intent-grid">
-      <div class="intent-card">
-        <div class="intent-title">🎁 Gift-Related</div>
-        <div class="intent-stat"><span>Revenue</span><span>$284</span></div>
-        <div class="intent-stat"><span>Avg ACOS</span><span>21%</span></div>
-        <div class="intent-stat"><span>Keywords</span><span>14</span></div>
-        <div class="bar-wrap"><div class="bar bar-green" style="width:79%"></div></div>
-      </div>
-      <div class="intent-card">
-        <div class="intent-title">🧵 Hobby / Craft</div>
-        <div class="intent-stat"><span>Revenue</span><span>$412</span></div>
-        <div class="intent-stat"><span>Avg ACOS</span><span>29%</span></div>
-        <div class="intent-stat"><span>Keywords</span><span>31</span></div>
-        <div class="bar-wrap"><div class="bar bar-green" style="width:65%"></div></div>
-      </div>
-      <div class="intent-card">
-        <div class="intent-title">🎨 Style / Aesthetic</div>
-        <div class="intent-stat"><span>Revenue</span><span>$158</span></div>
-        <div class="intent-stat"><span>Avg ACOS</span><span>38%</span></div>
-        <div class="intent-stat"><span>Keywords</span><span>22</span></div>
-        <div class="bar-wrap"><div class="bar bar-orange" style="width:47%"></div></div>
-      </div>
-      <div class="intent-card">
-        <div class="intent-title">🎒 Occasion / Use</div>
-        <div class="intent-stat"><span>Revenue</span><span>$97</span></div>
-        <div class="intent-stat"><span>Avg ACOS</span><span>51%</span></div>
-        <div class="intent-stat"><span>Keywords</span><span>18</span></div>
-        <div class="bar-wrap"><div class="bar bar-red" style="width:28%"></div></div>
-      </div>
+  <div id="str-results" style="display:none;">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+      <input class="srch" type="text" placeholder="Filter keywords…" id="str-search" oninput="filterSTR()">
+      <select class="fsel" id="str-flag" onchange="filterSTR()">
+        <option value="">All keywords</option>
+        <option value="harvest">✓ Harvest candidates</option>
+        <option value="negate">✗ Negate candidates</option>
+        <option value="watch">⚠ Watch (above BE)</option>
+      </select>
+      <div class="rcount" id="str-count"></div>
+      <button class="btn-outline btn-sm" onclick="resetSTR()">✕ Clear report</button>
     </div>
-
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Top Keywords by Revenue</div>
-        <div class="card-sub">Sample data — run "run search term analysis" with your report</div>
-      </div>
-      <table>
-        <thead><tr><th>#</th><th>Keyword</th><th>Revenue</th><th>ACOS</th><th>Orders</th><th>Conv. Rate</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td>iron on patches for clothing</td><td>$142</td><td>22%</td><td>18</td><td>8.4%</td><td><span class="pill pill-green">PROMOTE</span></td></tr>
-          <tr><td>2</td><td>patches for jackets iron on</td><td>$98</td><td>28%</td><td>11</td><td>6.1%</td><td><span class="pill pill-blue">HARVEST</span></td></tr>
-          <tr><td>3</td><td>embroidered iron on patches</td><td>$87</td><td>31%</td><td>9</td><td>5.8%</td><td><span class="pill pill-blue">HARVEST</span></td></tr>
-          <tr><td>4</td><td>cute iron on patches</td><td>$64</td><td>35%</td><td>7</td><td>4.9%</td><td><span class="pill pill-yellow">WATCH</span></td></tr>
-          <tr><td>5</td><td>butterfly iron on patch</td><td>$51</td><td>19%</td><td>6</td><td>9.2%</td><td><span class="pill pill-green">PROMOTE</span></td></tr>
-          <tr><td>6</td><td>iron on patch set</td><td>$43</td><td>44%</td><td>5</td><td>3.1%</td><td><span class="pill pill-yellow">WATCH</span></td></tr>
-          <tr><td>7</td><td>patches for backpacks</td><td>$38</td><td>62%</td><td>4</td><td>2.2%</td><td><span class="pill pill-red">NEGATE</span></td></tr>
-        </tbody>
-      </table>
+    <div style="display:flex;gap:16px;margin-bottom:14px;">
+      <div id="str-summary-harvest" style="background:#1c4532;border:1px solid #276749;border-radius:6px;padding:10px 14px;font-size:12px;color:#9ae6b4;min-width:160px;"></div>
+      <div id="str-summary-negate" style="background:#742a2a;border:1px solid #c53030;border-radius:6px;padding:10px 14px;font-size:12px;color:#fc8181;min-width:160px;"></div>
+      <div id="str-summary-watch" style="background:#744210;border:1px solid #c05621;border-radius:6px;padding:10px 14px;font-size:12px;color:#f6e05e;min-width:160px;"></div>
     </div>
-
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">🗑 Wasted Ad Spend</div>
-        <div class="card-sub">≥$1.00 spend, 0 orders</div>
-      </div>
-      <table>
-        <thead><tr><th>Keyword</th><th>Spend</th><th>Clicks</th><th>Impressions</th><th>Action</th></tr></thead>
-        <tbody>
-          <tr><td>sew on patches</td><td style="color:#f44336">$8.40</td><td>31</td><td>1,240</td><td><span class="pill pill-red">NEGATE — Campaign Level</span></td></tr>
-          <tr><td>patches for hats</td><td style="color:#f44336">$5.20</td><td>19</td><td>890</td><td><span class="pill pill-red">NEGATE — Campaign Level</span></td></tr>
-          <tr><td>velcro patches</td><td style="color:#f44336">$3.10</td><td>12</td><td>540</td><td><span class="pill pill-red">NEGATE — Ad Group Level</span></td></tr>
-          <tr><td>patch maker</td><td style="color:#f44336">$1.80</td><td>7</td><td>320</td><td><span class="pill pill-red">NEGATE — Ad Group Level</span></td></tr>
-          <tr><td colspan="2" style="color:#f44336; font-weight:700; font-size:13px;">Total wasted: $18.50</td><td colspan="3" style="color:#888; font-size:12px;">Est. monthly waste: ~$92 if not negated</td></tr>
-        </tbody>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Customer Search Term</th><th>Campaign</th><th>Match</th><th>Clicks</th><th>Orders</th><th>Spend</th><th>Revenue</th><th>ACoS</th><th>Action</th></tr></thead>
+        <tbody id="str-body"></tbody>
       </table>
     </div>
   </div>
+</div>
 
-  <!-- HARVEST -->
-  <div class="panel" id="panel-harvest">
-    <div class="kpi-row" style="grid-template-columns: repeat(4, 1fr);">
-      <div class="kpi"><div class="kpi-label">Harvest</div><div class="kpi-value" style="color:#42a5f5">7</div><div class="kpi-change neutral">move to Exact/Phrase</div></div>
-      <div class="kpi"><div class="kpi-label">Negate</div><div class="kpi-value" style="color:#f44336">4</div><div class="kpi-change neutral">cut bleeders</div></div>
-      <div class="kpi"><div class="kpi-label">Promote</div><div class="kpi-value" style="color:#4caf50">3</div><div class="kpi-change neutral">proven winners</div></div>
-      <div class="kpi"><div class="kpi-label">Watch</div><div class="kpi-value" style="color:#ffc107">5</div><div class="kpi-change neutral">check next cycle</div></div>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">🚀 PROMOTE — Proven winners, add to Exact now</div></div>
-      <table>
-        <thead><tr><th>Search Term</th><th>Campaign</th><th>Orders</th><th>ACOS</th><th>Action</th></tr></thead>
-        <tbody>
-          <tr><td>iron on patches for clothing</td><td>IronPatch - Broad</td><td>18</td><td>22%</td><td><span class="pill pill-green">Add to Exact Match</span></td></tr>
-          <tr><td>butterfly iron on patch</td><td>IronPatch - Auto</td><td>6</td><td>19%</td><td><span class="pill pill-green">Add to Exact Match</span></td></tr>
-          <tr><td>embroidered flower patch</td><td>IronPatch - Broad</td><td>5</td><td>23%</td><td><span class="pill pill-green">Add to Exact Match</span></td></tr>
-        </tbody>
+<!-- ═══ HARVEST ═══ -->
+<div class="panel" id="panel-harvest">
+  <div id="harvest-empty">
+    <div class="empty"><div class="empty-icon">🌾</div><div style="font-weight:600;margin-bottom:6px;">No data yet</div><div style="font-size:12px;color:var(--muted);">Upload your Search Term Report in the Search Terms tab first.<br>Harvest candidates will appear here automatically.</div></div>
+  </div>
+  <div id="harvest-results" style="display:none;">
+    <div class="alert ag" id="harvest-alert"></div>
+    <div class="section-title" style="margin-bottom:12px;">✓ Harvest Candidates — move to Exact match campaigns</div>
+    <div class="tbl-wrap" style="margin-bottom:20px;">
+      <table class="tbl">
+        <thead><tr><th>Keyword</th><th>Campaign</th><th>Clicks</th><th>Orders</th><th>Spend</th><th>Revenue</th><th>ACoS</th><th>Suggested Bid</th><th>Action</th></tr></thead>
+        <tbody id="harvest-body"></tbody>
       </table>
     </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">🟢 HARVEST — Add to Exact or Phrase</div></div>
-      <table>
-        <thead><tr><th>Search Term</th><th>Orders</th><th>ACOS</th><th>Rec. Match Type</th></tr></thead>
-        <tbody>
-          <tr><td>patches for jackets iron on</td><td>11</td><td>28%</td><td><span class="pill pill-blue">Exact Match</span></td></tr>
-          <tr><td>embroidered iron on patches</td><td>9</td><td>31%</td><td><span class="pill pill-blue">Exact Match</span></td></tr>
-          <tr><td>cute iron on patches</td><td>7</td><td>35%</td><td><span class="pill pill-yellow">Phrase Match</span></td></tr>
-          <tr><td>iron on patch set</td><td>5</td><td>34%</td><td><span class="pill pill-yellow">Phrase Match</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">🔴 NEGATE — Stop spending here</div></div>
-      <table>
-        <thead><tr><th>Search Term</th><th>Spend</th><th>Level</th><th>Match Type</th></tr></thead>
-        <tbody>
-          <tr><td>sew on patches</td><td style="color:#f44336">$8.40</td><td>Campaign-level</td><td>Negative Exact</td></tr>
-          <tr><td>patches for hats</td><td style="color:#f44336">$5.20</td><td>Campaign-level</td><td>Negative Phrase</td></tr>
-          <tr><td>velcro patches</td><td style="color:#f44336">$3.10</td><td>Ad Group-level</td><td>Negative Exact</td></tr>
-          <tr><td>patch maker</td><td style="color:#f44336">$1.80</td><td>Ad Group-level</td><td>Negative Exact</td></tr>
-        </tbody>
+    <div class="section-title" style="margin-bottom:12px;">✗ Negate Candidates — add as Negative Exact</div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Keyword</th><th>Campaign</th><th>Clicks</th><th>Orders</th><th>Spend</th><th>Action</th></tr></thead>
+        <tbody id="negate-body"></tbody>
       </table>
     </div>
   </div>
+</div>
 
-  <!-- BID OPTIMIZER -->
-  <div class="panel" id="panel-bids">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Bid Optimizer — RPC Method</div>
-        <div class="card-sub">Bids calculated using Bid = (Revenue ÷ Clicks) × 35% ACOS</div>
-      </div>
-      <div class="bid-row header-row">
-        <span>Keyword</span>
-        <span>Current Bid</span>
-        <span>New Bid</span>
-        <span>Change</span>
-        <span>Confidence</span>
-        <span>Reason</span>
-      </div>
-      <div id="bid-table"></div>
-      <div class="btn-row">
-        <button class="btn" onclick="recalcBids()">↻ Recalculate All</button>
-        <button class="btn btn-ghost" onclick="downloadBids()">⬇ Download Bulk File</button>
-        <button class="btn btn-ghost" style="border-color:#f44336;color:#f44336;" onclick="downloadReverse()">⬇ Download REVERSE File</button>
-      </div>
+<!-- ═══ BID OPTIMIZER ═══ -->
+<div class="panel" id="panel-bids">
+  <div id="bid-upload-zone">
+    <div class="alert ai">
+      📥 <strong>What to download:</strong> Amazon Ads → Bulk Operations → Download → Sponsored Products → Download bulk sheet (.tsv). Then upload it below.
     </div>
-
-    <div class="card" style="border-color:#f44336;">
-      <div class="card-header">
-        <div class="card-title" style="color:#f44336;">⚠️ Critical: Reverse File</div>
-      </div>
-      <div style="padding:16px 20px; font-size:13px; color:#aaa; line-height:1.6;">
-        Always download the REVERSE FILE before uploading bid changes to Amazon. If your account starts tanking after a bid upload, upload the reverse file immediately via Bulk Operations — this restores every bid to exactly where it was before. Zero damage done. Never skip this step.
-      </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">
+      <label class="upload-zone" id="bulk-drop" style="flex:1;min-width:260px;">
+        <input type="file" id="bulk-file" accept=".tsv,.csv,.txt" onchange="loadBulk(this)">
+        <div class="upload-icon">📄</div>
+        <div class="upload-title">Upload Bulk Sheet <span style="color:var(--muted);font-weight:400;">(required)</span></div>
+        <div class="upload-sub">Bulk Sheet Export from Amazon Ads · .tsv</div>
+      </label>
+      <label class="upload-zone" id="str-bid-drop" style="flex:1;min-width:260px;">
+        <input type="file" id="str-bid-file" accept=".tsv,.csv,.txt" onchange="loadSTRforBids(this)">
+        <div class="upload-icon">📋</div>
+        <div class="upload-title">Upload Search Term Report <span style="color:var(--muted);font-weight:400;">(optional)</span></div>
+        <div class="upload-sub">Improves bid accuracy using actual RPC data</div>
+      </label>
     </div>
   </div>
 
-  <!-- SETTINGS -->
-  <div class="panel" id="panel-settings">
-    <div class="card">
-      <div class="card-header"><div class="card-title">Account Settings</div></div>
-      <div class="settings-row">
-        <span class="settings-label">Portfolio ID</span>
-        <span class="settings-value">51375857896619</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-label">Default Daily Budget</span>
-        <span class="settings-value">$12.00 per campaign</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-label">Default Starting Bid</span>
-        <span class="settings-value">$0.75</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-label">Bidding Strategy</span>
-        <span class="settings-value">Dynamic bids — down only</span>
-      </div>
+  <div id="bid-results" style="display:none;">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <label style="color:var(--muted);font-size:12px;white-space:nowrap;">Product (sets target ACoS):</label>
+      <select class="fsel" id="prod-sel" onchange="recalcBids()" style="min-width:260px;"></select>
+      <span id="bid-prod-info" style="font-size:11px;color:var(--muted);"></span>
+      <span style="margin-left:auto;display:flex;gap:8px;">
+        <button class="btn" onclick="recalcBids()">↻ Recalc</button>
+        <button class="btn-green" onclick="downloadBidFile()">⇓ Download Bid File</button>
+        <button class="btn-outline btn-sm" onclick="resetBids()">✕ Clear</button>
+      </span>
     </div>
+    <div class="bid-header"><span>Keyword</span><span>Current</span><span>New Bid</span><span>Change</span><span>Confidence</span><span>Reason</span></div>
+    <div id="bid-table" style="background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;"></div>
+  </div>
 
-    <div class="card">
-      <div class="card-header"><div class="card-title">Optimization Thresholds</div></div>
-      <div class="settings-row"><span class="settings-label">Target ACOS</span><span class="settings-value">35%</span></div>
-      <div class="settings-row"><span class="settings-label">Bid Floor (min CPC)</span><span class="settings-value">$0.10</span></div>
-      <div class="settings-row"><span class="settings-label">Bid Ceiling (max CPC)</span><span class="settings-value">$2.00</span></div>
-      <div class="settings-row"><span class="settings-label">Safety Cap per Run</span><span class="settings-value">30% max change</span></div>
-      <div class="settings-row"><span class="settings-label">Nudge Size</span><span class="settings-value">10% (low-confidence keywords)</span></div>
-      <div class="settings-row"><span class="settings-label">No-Sale Cutoff</span><span class="settings-value">30 days</span></div>
-      <div class="settings-row"><span class="settings-label">Harvest Threshold</span><span class="settings-value">≥1 order AND ACOS ≤35%</span></div>
-      <div class="settings-row"><span class="settings-label">Negate Threshold</span><span class="settings-value">≥$1.00 spend AND 0 orders</span></div>
-      <div class="settings-row"><span class="settings-label">Promote Threshold</span><span class="settings-value">≥3 orders AND ACOS ≤25%</span></div>
+  <div style="margin-top:20px;" class="section-title">RPC Formula</div>
+  <div class="formula-box">
+    <div class="fl">Bid = (Revenue ÷ Clicks) × Target ACoS</div>
+    <div style="margin:8px 0;border-top:1px solid var(--border);"></div>
+    <div style="color:var(--muted);font-size:11px;margin-bottom:3px;">Standard $6.99 product — 100 clicks, $69.90 revenue, target 21.97%:</div>
+    <div class="fl">RPC = $0.699 → Bid = $0.699 × 0.2197 = <span style="color:var(--green)">$0.154</span></div>
+    <div style="margin:8px 0;border-top:1px solid var(--border);"></div>
+    <div style="color:var(--muted);font-size:11px;margin-bottom:3px;">Boho/Botanical $7.99 — 100 clicks, $79.90 revenue, target 26.06%:</div>
+    <div class="fl">RPC = $0.799 → Bid = $0.799 × 0.2606 = <span style="color:var(--green)">$0.208</span></div>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS ═══ -->
+<div class="panel active" id="panel-settings">
+  <div class="settings-grid">
+    <div class="s-block">
+      <h3>🚀 GitHub Pages Publishing</h3>
+      <div class="s-row"><div><div class="s-label">GitHub Token</div><div class="s-desc">Stored locally in your browser. Never sent anywhere except GitHub API.</div></div></div>
+      <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <input class="token-input" type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxx">
+        <button class="btn btn-sm" style="margin-left:8px;" onclick="saveToken()">Save</button>
+        <button class="btn-outline btn-sm" style="margin-left:4px;" onclick="clearToken()">Clear</button>
+        <div id="token-status" style="font-size: 11px; margin-top: 6px; color: var(--green);">Token saved. You're set.</div>
+      </div>
+      <div class="s-row"><div><div class="s-label">Publish URL</div></div><div class="s-val" style="font-size:11px;font-family:monospace;">victor8825.github.io/ppc-dashboard</div></div>
+      <div class="s-row"><div><div class="s-label">Repository</div></div><div class="s-val" style="font-size:11px;">Victor8825/ppc-dashboard</div></div>
+      <div class="s-row"><div><div class="s-label">Portfolio ID</div></div><div class="s-val" style="font-family:monospace;font-size:11px;">51375857896619</div></div>
     </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">Trigger Phrases</div></div>
-      <table>
-        <thead><tr><th>Say This</th><th>Attach This</th><th>You Get</th></tr></thead>
-        <tbody>
-          <tr><td><code style="color:#f90">run search term analysis</code></td><td>SP Search Term Report (60d, Summary)</td><td>5-section HTML dashboard</td></tr>
-          <tr><td><code style="color:#f90">harvest keywords</code></td><td>SP Search Term Report</td><td>Harvest / Negate / Promote / Watch lists</td></tr>
-          <tr><td><code style="color:#f90">adjust bids</code></td><td>Bulk Sheet Export</td><td>RPC bid dashboard + reverse file</td></tr>
-          <tr><td><code style="color:#f90">create campaigns</code></td><td>ASIN list</td><td>Interactive artifact → bulk upload file</td></tr>
-          <tr><td><code style="color:#f90">run dayparting</code></td><td>Two hourly reports (14d + 14d)</td><td>HTML dashboard + bid schedule</td></tr>
-        </tbody>
-      </table>
+    <div class="s-block">
+      <h3>🎯 Target ACoS by Price Tier</h3>
+      <div class="s-row"><div><div class="s-label">$6.99 Low-margin group</div><div class="s-desc">Rainbow, Rabbit, Owl, Fox, Tiger, Bee, Sun, Dinosaur, Flames, Panther, Castle, Lion</div></div><div class="s-val">19.40%</div></div>
+      <div class="s-row"><div><div class="s-label">$6.99 Standard (most)</div><div class="s-desc">Flags, Animals, Nature, Gothic</div></div><div class="s-val">~22%</div></div>
+      <div class="s-row"><div><div class="s-label">$7.99 Bear</div></div><div class="s-val">24.48%</div></div>
+      <div class="s-row"><div><div class="s-label">$7.99 Boho/Botanical</div><div class="s-desc">Deers, Peony, Peacock, Foxes, Bluebird, etc.</div></div><div class="s-val">26.06%</div></div>
+      <div class="s-row"><div><div class="s-label">$7.99 Cardinal</div></div><div class="s-val">26.73%</div></div>
+      <div class="s-row"><div><div class="s-label">$8.99 Baseball Set</div></div><div class="s-val">21.76%</div></div>
+    </div>
+    <div class="s-block">
+      <h3>📊 Confidence Tiers</h3>
+      <div class="s-row"><div><div class="s-label">High — full RPC formula</div></div><div class="s-val" style="font-size:11px;">≥10 clicks, ≥2 orders</div></div>
+      <div class="s-row"><div><div class="s-label">Medium — RPC + 30% cap</div></div><div class="s-val" style="font-size:11px;">5–9 clicks, ≥1 order</div></div>
+      <div class="s-row"><div><div class="s-label">Low — nudge 10% only</div></div><div class="s-val" style="font-size:11px;">&lt;5 clicks</div></div>
+      <div class="s-row"><div><div class="s-label">Bid floor</div></div><div class="s-val">$0.10</div></div>
+      <div class="s-row"><div><div class="s-label">Bid ceiling</div></div><div class="s-val">$2.00</div></div>
+      <div class="s-row"><div><div class="s-label">Max change per round</div></div><div class="s-val">±30%</div></div>
+    </div>
+    <div class="s-block">
+      <h3>🌾 Harvest &amp; Negation Thresholds</h3>
+      <div class="s-row"><div><div class="s-label">Harvest when</div></div><div class="s-val" style="font-size:11px;">ACoS ≤ BE + ≥10 clicks + ≥2 orders</div></div>
+      <div class="s-row"><div><div class="s-label">Negate ($6.99) when</div></div><div class="s-val" style="font-size:11px;">$14 spend, 0 orders</div></div>
+      <div class="s-row"><div><div class="s-label">Negate ($7.99) when</div></div><div class="s-val" style="font-size:11px;">$16 spend, 0 orders</div></div>
+      <div class="s-row"><div><div class="s-label">Default daily budget</div></div><div class="s-val">$12.00</div></div>
     </div>
   </div>
 
+  <div style="margin-top:20px;" class="section-title">Break-Even ACoS Reference</div>
+  <div class="alert aw" style="margin-bottom:10px;">When actual ACoS &gt; break-even, you are paying for ads from your own margin.</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Tier</th><th>Price</th><th>FBA Fee</th><th>Unit Cost</th><th>Profit Before PPC</th><th>Break-Even ACoS</th><th>Target ACoS</th></tr></thead>
+      <tbody>
+        <tr><td>Low-margin $6.99</td><td>$6.99</td><td>$3.53</td><td>~$1.20</td><td>$2.26</td><td><strong style="color:var(--yellow)">32.33%</strong></td><td>19.40%</td></tr>
+        <tr><td>Standard $6.99</td><td>$6.99</td><td>$3.53</td><td>~$0.90</td><td>$2.56</td><td><strong style="color:var(--yellow)">36.62%</strong></td><td>21.97%</td></tr>
+        <tr><td>Bear $7.99</td><td>$7.99</td><td>$3.53</td><td>~$1.20</td><td>$3.26</td><td><strong style="color:var(--yellow)">40.80%</strong></td><td>24.48%</td></tr>
+        <tr><td>Cardinal $7.99</td><td>$7.99</td><td>$3.53</td><td>~$0.90</td><td>$3.56</td><td><strong style="color:var(--yellow)">44.56%</strong></td><td>26.73%</td></tr>
+        <tr><td>Boho/Botanical $7.99</td><td>$7.99</td><td>$3.53</td><td>~$0.99</td><td>$3.47</td><td><strong style="color:var(--yellow)">43.43%</strong></td><td>26.06%</td></tr>
+        <tr><td>Baseball Set $8.99</td><td>$8.99</td><td>$3.58</td><td>~$2.15</td><td>$3.26</td><td><strong style="color:var(--yellow)">36.26%</strong></td><td>21.76%</td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
-  function showPanel(name) {
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('panel-' + name).classList.add('active');
-    event.target.classList.add('active');
-  }
+// ═══════════════ PRODUCT CATALOG ═══════════════
+const PRODUCTS=[
+  {name:'Great Britain Flag',asin:'B0D9PMXHYW',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'clearance'},
+  {name:'Hawaii Flag',asin:'B0D9PL8BY9',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Ireland Flag',asin:'B0D9PKTS9L',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Canada Flag',asin:'B0D9PLYN1D',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'USA Texas Flag',asin:'B0D9PLQ96Q',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Dominican Republic',asin:'B0D9PM1YJW',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Greece Flag',asin:'B0D9PND4LD',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'clearance'},
+  {name:'Italy Flag',asin:'B0D9PNB2RQ',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Jamaica Flag',asin:'B0D9PN37NS',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Chicago',asin:'B0D9PML843',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Puerto Rico',asin:'B0D9PMBYVK',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Colombia Flag',asin:'B0D9PL77VH',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'clearance'},
+  {name:'Mexico Flag',asin:'B0D9PM4DHJ',portfolio:'Flags',price:6.99,ta:0.2232,be:0.3720,profit:2.60,bid:0.15,status:'active'},
+  {name:'Texas Come & Take It',asin:'B0D9PJLW7N',portfolio:'Flags',price:6.99,ta:0.2232,be:0.3720,profit:2.60,bid:0.15,status:'clearance'},
+  {name:'Templar Crusader',asin:'B0D9PN4Y9Q',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Duck Kid',asin:'B0D9MS4R8H',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'clearance'},
+  {name:'USA Flag Skull',asin:'B0D9PL4CDS',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Rabbit',asin:'B0D8JN12KX',portfolio:'Child Unisex',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Capybara',asin:'B0FM3LCQNN',portfolio:'Child Unisex',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Zebra',asin:'B0D9MSSFG5',portfolio:'Child Unisex',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Ladybug',asin:'B0D9PKC3VM',portfolio:'Child Unisex',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Owl',asin:'B0CKRVZ64M',portfolio:'Child Unisex',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Lion',asin:'B0CKWFV5V1',portfolio:'Child Unisex',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'clearance'},
+  {name:'Fox',asin:'B0CKTZGFD1',portfolio:'Child Unisex',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Tiger',asin:'B0CKWJ9K4V',portfolio:'Child Unisex',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Bee',asin:'B0CKTXBC4S',portfolio:'Child Unisex',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Panda',asin:'B0FLYQ4ZXW',portfolio:'Child Unisex',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Crab',asin:'B0D9KQZGFQ',portfolio:'Child Unisex',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Tractor',asin:'B0D9PJGT9H',portfolio:'Child Unisex',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Banana',asin:'B0D8JM1CVN',portfolio:'Child Unisex',price:6.99,ta:0.2232,be:0.3720,profit:2.60,bid:0.15,status:'active'},
+  {name:'Unicorn Head',asin:'B0D9PJWVZ1',portfolio:'Child Unisex',price:6.99,ta:0.2232,be:0.3720,profit:2.60,bid:0.15,status:'active'},
+  {name:'Giraffe',asin:'B0D9MV15XH',portfolio:'Child Unisex',price:6.99,ta:0.2172,be:0.3619,profit:2.53,bid:0.15,status:'active'},
+  {name:'Shark Cute',asin:'B0DBJB6J8M',portfolio:'Child Unisex',price:6.99,ta:0.2163,be:0.3605,profit:2.52,bid:0.15,status:'active'},
+  {name:'Strong Shark',asin:'B0D8JMWY4V',portfolio:'Child Unisex',price:6.99,ta:0.2180,be:0.3634,profit:2.54,bid:0.15,status:'active'},
+  {name:'Rocket',asin:'B0D9PKF3DD',portfolio:'Child Unisex',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Astronaut',asin:'B0D9P2VV43',portfolio:'Child Unisex',price:6.99,ta:0.2275,be:0.3791,profit:2.65,bid:0.16,status:'active'},
+  {name:'Lightning Bolt',asin:'B0D9PJNHFW',portfolio:'Child Unisex',price:6.99,ta:0.2155,be:0.3591,profit:2.51,bid:0.15,status:'active'},
+  {name:'Retro Camera',asin:'B0D9PJMY2W',portfolio:'Child Unisex',price:6.99,ta:0.2249,be:0.3748,profit:2.62,bid:0.16,status:'active'},
+  {name:'Sloth',asin:'B0D8JQJC54',portfolio:'Child Unisex',price:6.99,ta:0.2026,be:0.3376,profit:2.36,bid:0.14,status:'active'},
+  {name:'Train Kids',asin:'B0D8JQ1W63',portfolio:'Child Unisex',price:6.99,ta:0.2249,be:0.3748,profit:2.62,bid:0.16,status:'active'},
+  {name:'Sun',asin:'B0CKWHCNB1',portfolio:'Child Unisex',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Squirrel',asin:'B0CKWDH97P',portfolio:'Child Unisex',price:6.99,ta:0.2069,be:0.3448,profit:2.41,bid:0.14,status:'active'},
+  {name:'Dolphin',asin:'B0CKWJRLYC',portfolio:'Child Unisex',price:6.99,ta:0.2069,be:0.3448,profit:2.41,bid:0.14,status:'active'},
+  {name:'Snowflake',asin:'B0CKWM3QX3',portfolio:'Child Unisex',price:6.99,ta:0.2112,be:0.3519,profit:2.46,bid:0.15,status:'active'},
+  {name:'Maneki-Cat',asin:'B0FP34LBKQ',portfolio:'Child Unisex',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Sunflower',asin:'B0FP319YD6',portfolio:'Child Unisex',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Elephant',asin:'B0CKTWD6DJ',portfolio:'Child Unisex',price:6.99,ta:0.2086,be:0.3476,profit:2.43,bid:0.15,status:'active'},
+  {name:'Dinosaur',asin:'B0CKRYLTQ5',portfolio:'Child Unisex',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Cardinal Bird',asin:'B0CKRXSDFD',portfolio:'Child Unisex',price:7.99,ta:0.2673,be:0.4456,profit:3.56,bid:0.21,status:'active'},
+  {name:'Rainbow',asin:'B0CKTTL81M',portfolio:'Child Girls',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Princess Crown',asin:'B0CKTWQJDZ',portfolio:'Child Girls',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Black Girl Magic',asin:'B0CKWHMS9L',portfolio:'Child Girls',price:6.99,ta:0.2263,be:0.3750,profit:2.26,bid:0.16,status:'active'},
+  {name:'Dragonfly',asin:'B0CKWJ9FQF',portfolio:'Child Girls',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Wild Flowers',asin:'B0FP326TW4',portfolio:'Child Girls',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Littleg Meme',asin:'B0FP32YJ51',portfolio:'Child Girls',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Stayw Meme',asin:'B0FP33GYPT',portfolio:'Child Girls',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Deers Boho',asin:'B0GS3CLX3F',portfolio:'Boho/Botanical',price:7.99,ta:0.2606,be:0.4343,profit:3.47,bid:0.25,status:'active'},
+  {name:'Fox and Owl Boho',asin:'B0GS3QSPMK',portfolio:'Boho/Botanical',price:7.99,ta:0.2606,be:0.4343,profit:3.47,bid:0.25,status:'active'},
+  {name:'Peony Purple',asin:'B0GS3Q23F6',portfolio:'Boho/Botanical',price:7.99,ta:0.2606,be:0.4343,profit:3.47,bid:0.25,status:'active'},
+  {name:'Peony Yellow',asin:'B0GS3HGJL3',portfolio:'Boho/Botanical',price:7.99,ta:0.2606,be:0.4343,profit:3.47,bid:0.25,status:'active'},
+  {name:'Peacock Botanical',asin:'B0GS3NS3J9',portfolio:'Boho/Botanical',price:7.99,ta:0.2606,be:0.4343,profit:3.47,bid:0.25,status:'active'},
+  {name:'Zodiacs Boho',asin:'B0GS3GKWZN',portfolio:'Boho/Botanical',price:7.99,ta:0.2606,be:0.4343,profit:3.47,bid:0.25,status:'active'},
+  {name:'Foxes Scandinavian',asin:'B0GS3SHNH8',portfolio:'Boho/Botanical',price:7.99,ta:0.2606,be:0.4343,profit:3.47,bid:0.25,status:'active'},
+  {name:'Bluebird Boho',asin:'B0GS3G2NMP',portfolio:'Boho/Botanical',price:7.99,ta:0.2606,be:0.4343,profit:3.47,bid:0.25,status:'active'},
+  {name:'Tulip Boho',asin:'B0GS3SLN7T',portfolio:'Boho/Botanical',price:7.99,ta:0.2606,be:0.4343,profit:3.47,bid:0.25,status:'active'},
+  {name:'Bear',asin:'B0CKRW5132',portfolio:'Boho/Botanical',price:7.99,ta:0.2448,be:0.4080,profit:3.26,bid:0.20,status:'active'},
+  {name:'Castle',asin:'B0CLHD8C4B',portfolio:'Nature',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Campfire Round',asin:'B0DBHSYH75',portfolio:'Nature',price:6.99,ta:0.2318,be:0.3863,profit:2.70,bid:0.16,status:'active'},
+  {name:'Travel Van',asin:'B0D9PL6M1S',portfolio:'Nature',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Ski Goggles',asin:'B0D9PKVSFS',portfolio:'Nature',price:6.99,ta:0.2266,be:0.3777,profit:2.64,bid:0.16,status:'active'},
+  {name:'Colosseum',asin:'B0CLHDBWZ4',portfolio:'Nature',price:6.99,ta:0.2094,be:0.3491,profit:2.44,bid:0.15,status:'active'},
+  {name:'Duck Hunting',asin:'B0D9MTSBD1',portfolio:'Nature',price:6.99,ta:0.2258,be:0.3763,profit:2.63,bid:0.16,status:'active'},
+  {name:'German Shepherd',asin:'B0CKRWZ3J1',portfolio:'Nature',price:6.99,ta:0.2094,be:0.3491,profit:2.44,bid:0.15,status:'active'},
+  {name:'Panther',asin:'B0CKWG9VPX',portfolio:'Nature',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Train Nature',asin:'B0CKWDN97C',portfolio:'Nature',price:6.99,ta:0.2120,be:0.3534,profit:2.47,bid:0.15,status:'active'},
+  {name:'Compass',asin:'B0CKRZX8HC',portfolio:'Nature',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Spaceman Head',asin:'B0CLHF6TPG',portfolio:'Nature',price:6.99,ta:0.2112,be:0.3519,profit:2.46,bid:0.15,status:'active'},
+  {name:'Bigfoot',asin:'B0CKWCPHP7',portfolio:'Nature',price:6.99,ta:0.2112,be:0.3519,profit:2.46,bid:0.15,status:'active'},
+  {name:'Flames',asin:'B0CKWFL1QQ',portfolio:'Nature',price:6.99,ta:0.1940,be:0.3233,profit:2.26,bid:0.14,status:'active'},
+  {name:'Campfire',asin:'B0D9PLDL2N',portfolio:'Nature',price:6.99,ta:0.2258,be:0.3763,profit:2.63,bid:0.16,status:'active'},
+  {name:'Earth Globe',asin:'B0CLHDMDZB',portfolio:'Nature',price:6.99,ta:0.2069,be:0.3448,profit:2.41,bid:0.14,status:'active'},
+  {name:'Mountain',asin:'B0CKWJPP7G',portfolio:'Nature',price:6.99,ta:0.2403,be:0.4006,profit:2.80,bid:0.17,status:'active'},
+  {name:'Tree of Life',asin:'B0CKWMGPVN',portfolio:'Nature',price:6.99,ta:0.2412,be:0.4020,profit:2.81,bid:0.17,status:'active'},
+  {name:'Goose Meme',asin:'B0FP2SHF5T',portfolio:'Nature',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Dino Meme',asin:'B0FP2NFXZ2',portfolio:'Nature',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Fishing Meme',asin:'B0FP2ZGLYS',portfolio:'Nature',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:"It's Fine Meme",asin:'B0FP31BWP5',portfolio:'Nature',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Skull Gothic',asin:'B0CKWJFBZQ',portfolio:'Rok/Tactical',price:6.99,ta:0.2094,be:0.3491,profit:2.44,bid:0.15,status:'active'},
+  {name:'Punisher Skull',asin:'B0D9MTB5PB',portfolio:'Rok/Tactical',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Skull Mom',asin:'B0DBHZWXSV',portfolio:'Rok/Tactical',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Pumpkin',asin:'B0D9P37QYR',portfolio:'Rok/Tactical',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Soccer Ball',asin:'B0D9PJRJ6C',portfolio:'Sport',price:6.99,ta:0.2232,be:0.3720,profit:2.60,bid:0.15,status:'clearance'},
+  {name:'Baseball Set',asin:'B0D9KNY4Z7',portfolio:'Sport',price:8.99,ta:0.2176,be:0.3626,profit:3.26,bid:0.20,status:'clearance'},
+  {name:'Baseball Bat',asin:'B0DBJ1GJD3',portfolio:'Sport',price:6.99,ta:0.2544,be:0.3634,profit:2.54,bid:0.18,status:'active'},
+  {name:'Birthday 1 Blue',asin:'B0DBM887P7',portfolio:'Birthday',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Birthday 2 Blue',asin:'B0DBMB3MKD',portfolio:'Birthday',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'active'},
+  {name:'Mouse Meme',asin:'B0FP33WMW4',portfolio:'Memes',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Cat Meme',asin:'B0FP2RDVH6',portfolio:'Memes',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+  {name:'Pride Meme',asin:'B0FP2N4RKM',portfolio:'Memes',price:6.99,ta:0.2052,be:0.3419,profit:2.39,bid:0.14,status:'active'},
+];
 
-  // Sample bid data
-  const bidData = [
-    { kw: 'iron on patches for clothing', current: 0.75, rev: 142, clicks: 214, orders: 18, conf: 'High' },
-    { kw: 'patches for jackets iron on', current: 0.75, rev: 98, clicks: 180, orders: 11, conf: 'High' },
-    { kw: 'embroidered iron on patches', current: 0.75, rev: 87, clicks: 155, orders: 9, conf: 'High' },
-    { kw: 'cute iron on patches', current: 0.75, rev: 64, clicks: 143, orders: 7, conf: 'High' },
-    { kw: 'butterfly iron on patch', current: 0.65, rev: 51, clicks: 65, orders: 6, conf: 'High' },
-    { kw: 'iron on patch set', current: 0.75, rev: 43, clicks: 98, orders: 5, conf: 'Medium' },
-    { kw: 'flower patches iron on', current: 0.75, rev: 31, clicks: 72, orders: 3, conf: 'Medium' },
-    { kw: 'patches for clothes', current: 0.75, rev: 0, clicks: 3, orders: 0, conf: 'Low' },
-  ];
+const FLOOR=0.10,CEILING=2.00;
 
-  const TARGET_ACOS = 0.35;
-  const FLOOR = 0.10;
-  const CEILING = 2.00;
+// ═══ STORED DATA ═══
+let strData=[], bulkData=[], bulkHeaders=[], strBidData=[];
 
-  function calcBid(d) {
-    if (d.clicks < 5 || d.orders === 0) {
-      return Math.min(Math.max(d.current * 1.10, FLOOR), CEILING);
-    }
-    const rpc = d.rev / d.clicks;
-    let bid = rpc * TARGET_ACOS;
-    // Safety cap 30%
-    const maxUp = d.current * 1.30;
-    const maxDown = d.current * 0.70;
-    bid = Math.min(bid, maxUp);
-    bid = Math.max(bid, maxDown);
-    bid = Math.min(Math.max(bid, FLOOR), CEILING);
-    return Math.round(bid * 100) / 100;
-  }
+// ═══ TAB NAV ═══
+function showPanel(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(el)el.classList.add('active');
+}
 
-  function renderBids() {
-    const tbl = document.getElementById('bid-table');
-    tbl.innerHTML = '';
-    bidData.forEach(d => {
-      const inputs = tbl.querySelectorAll('.bid-input');
-      const newBid = calcBid(d);
-      const pct = ((newBid - d.current) / d.current * 100).toFixed(1);
-      const pctClass = pct > 0 ? 'pct-up' : pct < 0 ? 'pct-down' : 'pct-neutral';
-      const pctSign = pct > 0 ? '+' : '';
-      const confPill = d.conf === 'High' ? 'pill-green' : d.conf === 'Medium' ? 'pill-yellow' : 'pill-red';
-      const reason = d.clicks < 5 ? 'Low data — nudge up 10%' : d.orders === 0 ? 'No sales — nudge only' : 'RPC formula applied';
+// ═══ CATALOG ═══
+function renderCatalog(){
+  const s=document.getElementById('cat-search').value.toLowerCase();
+  const pf=document.getElementById('cat-port').value;
+  const st=document.getElementById('cat-status').value;
+  const f=PRODUCTS.filter(p=>(!s||p.name.toLowerCase().includes(s)||p.asin.toLowerCase().includes(s))&&(!pf||p.portfolio===pf)&&(!st||p.status===st));
+  document.getElementById('cat-count').textContent=f.length+' of '+PRODUCTS.length;
+  document.getElementById('catalog-body').innerHTML=f.map(p=>`<tr><td style="font-weight:500">${p.name}</td><td><a class="asin" href="https://www.amazon.com/dp/${p.asin}" target="_blank">${p.asin}</a></td><td><span class="pill pb" style="font-size:9px">${p.portfolio}</span></td><td>$${p.price.toFixed(2)}</td><td class="acos-ok">${(p.ta*100).toFixed(2)}%</td><td style="color:var(--yellow)">${(p.be*100).toFixed(2)}%</td><td style="color:var(--green)">$${p.profit.toFixed(2)}</td><td style="color:var(--accent2)">$${p.bid.toFixed(2)}</td><td>${p.status==='clearance'?'<span class="pill po">Clearance</span>':'<span class="pill pg">Active</span>'}</td></tr>`).join('');
+}
 
-      const row = document.createElement('div');
-      row.className = 'bid-row';
-      row.innerHTML = `
-        <span style="color:#e8e8f0">${d.kw}</span>
-        <span>$${d.current.toFixed(2)}</span>
-        <span><input class="bid-input" data-idx="${bidData.indexOf(d)}" value="${newBid.toFixed(2)}" type="number" step="0.01" min="${FLOOR}" max="${CEILING}"></span>
-        <span class="change-pct ${pctClass}">${pctSign}${pct}%</span>
-        <span class="confidence"><span class="pill ${confPill}">${d.conf}</span></span>
-        <span style="color:#888;font-size:12px">${reason}</span>
-      `;
-      tbl.appendChild(row);
+// ═══ PORTFOLIO COUNTS ═══
+function updateCounts(){
+  const map={'Flags':'Flags','Child Unisex':'CU','Child Girls':'CG','Boho/Botanical':'BB','Nature':'Nat','Rok/Tactical':'Rok','Sport':'Spt'};
+  Object.keys(map).forEach(k=>{
+    const el=document.getElementById('pc-'+map[k]);
+    if(el)el.textContent=PRODUCTS.filter(p=>p.portfolio===k).length;
+  });
+  document.getElementById('pc-Mem').textContent=PRODUCTS.filter(p=>p.portfolio==='Memes'||p.portfolio==='Birthday').length;
+  document.getElementById('kpi-total').textContent=PRODUCTS.length;
+  const a=PRODUCTS.filter(p=>p.status==='active').length;
+  const c=PRODUCTS.filter(p=>p.status==='clearance').length;
+  document.getElementById('kpi-sub').textContent=a+' active · '+c+' clearance · 8 portfolios';
+}
+
+// ═══ TSV PARSER ═══
+function parseTsv(text){
+  const raw=text.trim();
+  // detect delimiter
+  const delim=raw.includes('\t')?'\t':',';
+  const lines=raw.split('\n').filter(l=>l.trim());
+  if(lines.length<2)return{headers:[],rows:[]};
+  const headers=lines[0].split(delim).map(h=>h.trim().replace(/^"|"$/g,''));
+  const rows=lines.slice(1).map(line=>{
+    const vals=line.split(delim).map(v=>v.trim().replace(/^"|"$/g,''));
+    return Object.fromEntries(headers.map((h,i)=>[h,vals[i]||'']));
+  });
+  return{headers,rows};
+}
+
+function colFind(row,candidates){
+  for(const c of candidates){if(row[c]!==undefined)return row[c]||'';}return'';
+}
+function toNum(v){
+  if(!v||v==='--'||v==='N/A')return 0;
+  return parseFloat(v.replace(/[%,$, ]/g,''))||0;
+}
+function toAcos(v){
+  if(!v||v==='--'||v==='N/A')return null;
+  const n=parseFloat(v.replace(/[%,$, ]/g,''));
+  if(isNaN(n))return null;
+  // If >1 assume it's a percentage string like "34.2" meaning 34.2%
+  return n>1?n/100:n;
+}
+
+// ═══ SEARCH TERM REPORT ═══
+function loadSTR(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const{rows}=parseTsv(e.target.result);
+    strData=rows.filter(r=>{
+      const term=colFind(r,['Customer Search Term','Search Term','customer search term']);
+      return term&&term!=='Total';
+    }).map(r=>{
+      const term=colFind(r,['Customer Search Term','Search Term','customer search term']);
+      const campaign=colFind(r,['Campaign Name','campaign name']);
+      const match=colFind(r,['Match Type','match type']);
+      const clicks=toNum(colFind(r,['Clicks','clicks']));
+      const orders=toNum(colFind(r,['7 Day Total Orders (#)','Orders','orders','7 Day Total Orders']));
+      const spend=toNum(colFind(r,['Spend','spend','Cost']));
+      const rev=toNum(colFind(r,['7 Day Total Sales ($)','7 Day Total Sales','Revenue','revenue']));
+      const acosRaw=colFind(r,['Total Advertising Cost of Sales (ACoS) ','Total Advertising Cost of Sales (ACoS)','ACoS','acos']);
+      let acos=toAcos(acosRaw);
+      if(acos===null&&clicks>0)acos=rev>0?spend/rev:null;
+      const rpc=clicks>0?rev/clicks:0;
+      return{term,campaign,match,clicks,orders,spend,rev,acos,rpc};
     });
+    renderSTR();
+    renderHarvest();
+    document.getElementById('str-upload-zone').style.display='none';
+    document.getElementById('str-results').style.display='';
+  };
+  reader.readAsText(file);
+}
+
+function getSTRFlag(d,targetAcos,beAcos,defaultPrice){
+  const negThresh=defaultPrice*2;
+  if(d.spend>=negThresh&&d.orders===0)return'negate';
+  if(d.acos!==null&&d.acos<=beAcos&&d.clicks>=10&&d.orders>=2)return'harvest';
+  if(d.acos!==null&&d.acos>beAcos)return'watch';
+  return'ok';
+}
+
+function renderSTR(){
+  const search=(document.getElementById('str-search')||{value:''}).value.toLowerCase();
+  const flagF=(document.getElementById('str-flag')||{value:''}).value;
+  const defaultTA=0.2197,defaultBE=0.3662,defaultPrice=6.99;
+  const filtered=strData.filter(d=>{
+    const flag=getSTRFlag(d,defaultTA,defaultBE,defaultPrice);
+    const matchSearch=!search||d.term.toLowerCase().includes(search)||(d.campaign||'').toLowerCase().includes(search);
+    const matchFlag=!flagF||flag===flagF;
+    return matchSearch&&matchFlag;
+  });
+  document.getElementById('str-count').textContent=filtered.length+' rows';
+  const h=strData.filter(d=>getSTRFlag(d,defaultTA,defaultBE,defaultPrice)==='harvest').length;
+  const n=strData.filter(d=>getSTRFlag(d,defaultTA,defaultBE,defaultPrice)==='negate').length;
+  const w=strData.filter(d=>getSTRFlag(d,defaultTA,defaultBE,defaultPrice)==='watch').length;
+  document.getElementById('str-summary-harvest').innerHTML='<strong>&#10003; Harvest</strong><br>'+h+' keywords ready to move to Exact';
+  document.getElementById('str-summary-negate').innerHTML='<strong>&#10007; Negate</strong><br>'+n+' keywords spending with 0 orders';
+  document.getElementById('str-summary-watch').innerHTML='<strong>&#9888; Watch</strong><br>'+w+' keywords above break-even';
+  document.getElementById('str-body').innerHTML=filtered.map(d=>{
+    const flag=getSTRFlag(d,defaultTA,defaultBE,defaultPrice);
+    const acosStr=d.acos!==null?(d.acos*100).toFixed(1)+'%':'—';
+    const acosClass=d.acos===null?'':d.acos<=defaultTA?'acos-ok':d.acos<=defaultBE?'acos-warn':d.acos<=defaultBE*1.3?'acos-high':'acos-bad';
+    let actionBadge='';
+    if(flag==='harvest')actionBadge='<span class="badge-harvest">HARVEST</span>';
+    else if(flag==='negate')actionBadge='<span class="badge-negate">NEGATE</span>';
+    else if(flag==='watch')actionBadge='<span class="badge-watch">WATCH</span>';
+    return`<tr><td style="font-weight:500">${d.term}</td><td style="color:var(--muted);font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.campaign}">${d.campaign}</td><td><span class="pill pb" style="font-size:9px">${d.match||'—'}</span></td><td>${d.clicks}</td><td>${d.orders}</td><td>$${d.spend.toFixed(2)}</td><td>$${d.rev.toFixed(2)}</td><td class="${acosClass}">${acosStr}</td><td>${actionBadge}</td></tr>`;
+  }).join('');
+}
+
+function filterSTR(){renderSTR();}
+
+function resetSTR(){
+  strData=[];
+  document.getElementById('str-upload-zone').style.display='';
+  document.getElementById('str-results').style.display='none';
+  document.getElementById('str-file').value='';
+  renderHarvest();
+}
+
+// ═══ HARVEST TAB ═══
+function renderHarvest(){
+  const defaultTA=0.2197,defaultBE=0.3662,defaultPrice=6.99;
+  if(!strData.length){
+    document.getElementById('harvest-empty').style.display='';
+    document.getElementById('harvest-results').style.display='none';
+    return;
   }
+  document.getElementById('harvest-empty').style.display='none';
+  document.getElementById('harvest-results').style.display='';
+  const candidates=strData.filter(d=>getSTRFlag(d,defaultTA,defaultBE,defaultPrice)==='harvest')
+    .sort((a,b)=>b.rev-a.rev);
+  const negates=strData.filter(d=>getSTRFlag(d,defaultTA,defaultBE,defaultPrice)==='negate')
+    .sort((a,b)=>b.spend-a.spend);
+  document.getElementById('harvest-alert').textContent=candidates.length+' harvest candidates · '+negates.length+' negate candidates — from '+strData.length+' search terms';
+  document.getElementById('harvest-body').innerHTML=candidates.map(d=>{
+    const sugBid=d.rpc>0?Math.round(Math.min(Math.max(d.rpc*defaultTA,FLOOR),CEILING)*100)/100:0.15;
+    return`<tr><td style="font-weight:600">${d.term}</td><td style="font-size:11px;color:var(--muted)">${d.campaign}</td><td>${d.clicks}</td><td>${d.orders}</td><td>$${d.spend.toFixed(2)}</td><td>$${d.rev.toFixed(2)}</td><td class="acos-ok">${d.acos!==null?(d.acos*100).toFixed(1)+'%':'—'}</td><td style="color:var(--green);font-weight:700">$${sugBid.toFixed(2)}</td><td><span class="badge-harvest">Move to Exact</span></td></tr>`;
+  }).join('');
+  document.getElementById('negate-body').innerHTML=negates.map(d=>`<tr><td style="font-weight:600">${d.term}</td><td style="font-size:11px;color:var(--muted)">${d.campaign}</td><td>${d.clicks}</td><td style="color:var(--red)">${d.orders}</td><td style="color:var(--red)">$${d.spend.toFixed(2)}</td><td><span class="badge-negate">Negative Exact</span></td></tr>`).join('');
+}
 
-  function recalcBids() { renderBids(); }
+// ═══ BID OPTIMIZER — BULK SHEET ═══
+function loadBulk(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const parsed=parseTsv(e.target.result);
+    bulkHeaders=parsed.headers;
+    bulkData=parsed.rows.filter(r=>{
+      const entity=(r['Entity']||r['entity']||'').toLowerCase();
+      return entity==='keyword';
+    });
+    populateProdSelect();
+    recalcBids();
+    document.getElementById('bid-results').style.display='';
+  };
+  reader.readAsText(file);
+}
 
-  function downloadBids() {
-    alert('In the real system: Claude generates an Excel bulk upload file with all bid changes, ready to upload to Amazon Ads → Bulk Operations.');
+function loadSTRforBids(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const{rows}=parseTsv(e.target.result);
+    strBidData=rows.filter(r=>{
+      const term=colFind(r,['Customer Search Term','Search Term','customer search term']);
+      return term&&term!=='Total';
+    }).map(r=>{
+      const kw=colFind(r,['Customer Search Term','Search Term']).toLowerCase().trim();
+      const clicks=toNum(colFind(r,['Clicks','clicks']));
+      const orders=toNum(colFind(r,['7 Day Total Orders (#)','Orders','orders']));
+      const rev=toNum(colFind(r,['7 Day Total Sales ($)','7 Day Total Sales','Revenue']));
+      const rpc=clicks>0?rev/clicks:0;
+      return{kw,clicks,orders,rev,rpc};
+    });
+    recalcBids();
+  };
+  reader.readAsText(file);
+}
+
+function populateProdSelect(){
+  const sel=document.getElementById('prod-sel');
+  sel.innerHTML='<option value="">-- No product selected (default 22%) --</option>';
+  PRODUCTS.forEach(p=>{
+    const o=document.createElement('option');
+    o.value=p.asin;
+    o.textContent=p.name+' · $'+p.price.toFixed(2)+' · '+((p.ta*100).toFixed(2))+'% target';
+    sel.appendChild(o);
+  });
+}
+
+function getSelProduct(){return PRODUCTS.find(p=>p.asin===document.getElementById('prod-sel').value)||null;}
+
+function getRpcData(kw){
+  if(!strBidData.length)return null;
+  const k=kw.toLowerCase().trim();
+  return strBidData.find(d=>d.kw===k)||null;
+}
+
+function calcBid(currentBid,kw){
+  const p=getSelProduct();
+  const T=p?p.ta:0.22;
+  const rpcData=getRpcData(kw);
+  if(rpcData&&rpcData.clicks>=5){
+    const{clicks,orders,rev,rpc}=rpcData;
+    let conf='Low',bid;
+    if(clicks>=10&&orders>=2){conf='High';bid=rpc*T;}
+    else if(clicks>=5&&orders>=1){conf='Medium';bid=rpc*T;bid=Math.min(bid,currentBid*1.30);}
+    else{conf='Low';bid=currentBid*1.10;}
+    bid=Math.min(Math.max(bid,FLOOR),CEILING);
+    return{bid:Math.round(bid*100)/100,conf,reason:'RPC from uploaded STR'};
   }
-  function downloadReverse() {
-    alert('REVERSE FILE: This Excel file contains your ORIGINAL bids. If the account tanks after uploading bid changes, upload this file immediately to restore everything to baseline.');
+  // No STR data — keep current bid or use default
+  return{bid:currentBid,conf:'—',reason:'No STR data — bid unchanged'};
+}
+
+function recalcBids(){
+  if(!bulkData.length)return;
+  const p=getSelProduct();
+  document.getElementById('bid-prod-info').innerHTML=p?`Target: <strong style="color:var(--accent)">${(p.ta*100).toFixed(2)}%</strong> &nbsp; BE: <strong style="color:var(--yellow)">${(p.be*100).toFixed(2)}%</strong> &nbsp; Profit: <strong style="color:var(--green)">$${p.profit.toFixed(2)}</strong>`:'Using 22% default target ACoS';
+  const tbl=document.getElementById('bid-table');
+  tbl.innerHTML='';
+  bulkData.forEach((row,i)=>{
+    const kw=colFind(row,['Keyword or Product Targeting','keyword or product targeting','Keyword','keyword','Customer Search Term']).trim();
+    const currentBid=toNum(colFind(row,['Bid','bid','Maximum Bid']));
+    if(!kw)return;
+    const{bid:newBid,conf,reason}=calcBid(currentBid,kw);
+    const pct=currentBid>0?((newBid-currentBid)/currentBid*100).toFixed(1):0;
+    const pc=pct>0?'pcu':pct<0?'pcd':'pcn';
+    const ps=pct>0?'+':'';
+    const cp=conf==='High'?'pg':conf==='Medium'?'py':conf==='Low'?'pr':'pcn';
+    const el=document.createElement('div');
+    el.className='bid-row';
+    el.dataset.idx=i;
+    el.innerHTML=`<span style="color:var(--text)">${kw.length>60?kw.slice(0,60)+'…':kw}</span><span>$${currentBid.toFixed(2)}</span><span><input class="bid-input" value="${newBid.toFixed(2)}" type="number" step="0.01" min="${FLOOR}" max="${CEILING}" data-idx="${i}"></span><span class="${pc}">${ps}${pct}%</span><span>${conf!=='—'?`<span class="pill ${cp}">${conf}</span>`:''}</span><span style="color:var(--muted);font-size:11px">${reason}</span>`;
+    tbl.appendChild(el);
+  });
+}
+
+function downloadBidFile(){
+  if(!bulkData.length){alert('No bulk sheet loaded.');return;}
+  // Build output: only keyword rows with updated bids
+  const bidInputs=document.querySelectorAll('#bid-table .bid-input');
+  const rows=[];
+  // Minimal columns needed for Amazon bid update
+  const outHeaders=['Entity','Operation','Campaign ID','Ad Group ID','Keyword ID','Keyword or Product Targeting','Match Type','Bid'];
+  rows.push(outHeaders.join('\t'));
+  bulkData.forEach((row,i)=>{
+    const inp=document.querySelector(`#bid-table .bid-input[data-idx="${i}"]`);
+    const newBid=inp?parseFloat(inp.value):toNum(colFind(row,['Bid','bid']));
+    const kw=colFind(row,['Keyword or Product Targeting','Keyword','keyword']);
+    if(!kw)return;
+    const r=[
+      'Keyword',
+      'update',
+      colFind(row,['Campaign ID','campaign id','Campaign Id']),
+      colFind(row,['Ad Group ID','ad group id','Ad Group Id']),
+      colFind(row,['Keyword ID','keyword id','Keyword Id']),
+      kw,
+      colFind(row,['Match Type','match type']),
+      newBid.toFixed(2)
+    ];
+    rows.push(r.join('\t'));
+  });
+  const tsv=rows.join('\n');
+  const blob=new Blob([tsv],{type:'text/tab-separated-values'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='bid_update_'+new Date().toISOString().slice(0,10)+'.tsv';
+  a.click();URL.revokeObjectURL(url);
+}
+
+function resetBids(){
+  bulkData=[];bulkHeaders=[];strBidData=[];
+  document.getElementById('bid-results').style.display='none';
+  document.getElementById('bulk-file').value='';
+  document.getElementById('str-bid-file').value='';
+}
+
+// ═══ GITHUB PUBLISH ═══
+function saveToken(){
+  const t=document.getElementById('gh-token-input').value.trim();
+  if(!t){alert('Enter a token first.');return;}
+  localStorage.setItem('gh_token',t);
+  document.getElementById('token-status').textContent='Token saved. You\'re set.';
+  document.getElementById('token-status').style.color='var(--green)';
+}
+function clearToken(){
+  localStorage.removeItem('gh_token');
+  document.getElementById('gh-token-input').value='';
+  document.getElementById('token-status').textContent='Token cleared.';
+  document.getElementById('token-status').style.color='var(--muted)';
+}
+function initTokenField(){
+  const t=localStorage.getItem('gh_token')||'';
+  if(t){
+    document.getElementById('gh-token-input').value=t;
+    document.getElementById('token-status').textContent='Token loaded from browser storage.';
+    document.getElementById('token-status').style.color='var(--green)';
   }
+}
 
-  // Init
-  renderBids();
+async function publishToGitHub(){
+  const token=localStorage.getItem('gh_token');
+  if(!token){
+    alert('No GitHub token saved.\n\nGo to Settings tab → enter your token → Save.\n\nThen click Publish again.');
+    showPanel('settings',document.querySelectorAll('.tab')[5]);
+    return;
+  }
+  const btn=document.getElementById('pub-btn');
+  const status=document.getElementById('pub-status');
+  btn.classList.add('pushing');
+  btn.textContent='Pushing…';
+  status.textContent='';
+  try{
+    // Get the full HTML source as string
+    const html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+    // Encode to base64 (handle unicode)
+    const b64=btoa(unescape(encodeURIComponent(html)));
+    const base='https://api.github.com/repos/Victor8825/ppc-dashboard';
+    const headers={'Authorization':'token '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json'};
+    // Get current SHA
+    const getRes=await fetch(base+'/contents/index.html',{headers});
+    let sha=null;
+    if(getRes.ok){const g=await getRes.json();sha=g.sha;}
+    // Upload
+    const body={message:'Update PPC dashboard '+new Date().toLocaleDateString(),content:b64,branch:'main'};
+    if(sha)body.sha=sha;
+    const putRes=await fetch(base+'/contents/index.html',{method:'PUT',headers,body:JSON.stringify(body)});
+    if(putRes.ok){
+      status.textContent='&#10003; Live in ~60s — victor8825.github.io/ppc-dashboard';
+      status.style.color='var(--green)';
+      // Enable pages if needed
+      fetch(base+'/pages',{method:'POST',headers,body:JSON.stringify({source:{branch:'main',path:'/'}})});
+    }else{
+      const err=await putRes.json();
+      status.textContent='Error: '+(err.message||putRes.status);
+      status.style.color='var(--red)';
+    }
+  }catch(e){
+    status.textContent='Error: '+e.message;
+    status.style.color='var(--red)';
+  }
+  btn.classList.remove('pushing');
+  btn.textContent='&#128640; Publish to GitHub';
+}
 
-  // Live date
-  const now = new Date();
-  document.getElementById('dateline').textContent = `Iron on Patches · Portfolio 51375857896619 · ${now.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'})}`;
+// ═══ DRAG & DROP ═══
+['str-drop','bulk-drop','str-bid-drop'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over');});
+  el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+  el.addEventListener('drop',e=>{
+    e.preventDefault();el.classList.remove('drag-over');
+    const file=e.dataTransfer.files[0];if(!file)return;
+    const inputId=id==='str-drop'?'str-file':id==='bulk-drop'?'bulk-file':'str-bid-file';
+    const inp=document.getElementById(inputId);
+    const dt=new DataTransfer();dt.items.add(file);inp.files=dt.files;
+    if(id==='str-drop')loadSTR(inp);
+    else if(id==='bulk-drop')loadBulk(inp);
+    else loadSTRforBids(inp);
+  });
+});
+
+// ═══ INIT ═══
+document.getElementById('dateline').textContent='Iron on Patches · Portfolio 51375857896619 · '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+updateCounts();
+renderCatalog();
+initTokenField();
 </script>
 
-</body>
-</html>
+
+</body></html>
