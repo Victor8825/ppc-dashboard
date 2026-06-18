@@ -3,6 +3,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PPC Command Center — Iron on Patches</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#0d0d14;--surface:#16161f;--surface2:#1e1e2a;--border:#2a2a3a;--accent:#7c6fff;--accent2:#4fd1c5;--text:#e8e8f0;--muted:#888;--green:#48bb78;--red:#fc8181;--yellow:#f6e05e;--orange:#ed8936;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -142,16 +143,16 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 </div>
 
 <div class="tabs">
-  <div class="tab" onclick="showPanel('overview',this)">📊 Overview</div>
+  <div class="tab active" onclick="showPanel('overview',this)">📊 Overview</div>
   <div class="tab" onclick="showPanel('catalog',this)">📦 Catalog</div>
   <div class="tab" onclick="showPanel('str',this)">🔍 Search Terms</div>
   <div class="tab" onclick="showPanel('harvest',this)">🌾 Harvest</div>
   <div class="tab" onclick="showPanel('bids',this)">💰 Bid Optimizer</div>
-  <div class="tab active" onclick="showPanel('settings',this)">⚙ Settings</div>
+  <div class="tab" onclick="showPanel('settings',this)">⚙ Settings</div>
 </div>
 
 <!-- ═══ OVERVIEW ═══ -->
-<div class="panel" id="panel-overview">
+<div class="panel active" id="panel-overview">
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-label">Total Products</div><div class="kpi-value" id="kpi-total">99</div><div class="kpi-sub" id="kpi-sub">91 active · 8 clearance · 8 portfolios</div></div>
     <div class="kpi-card"><div class="kpi-label">Target ACoS Range</div><div class="kpi-value">19–27%</div><div class="kpi-sub">$6.99 ~22% · Boho $7.99 ~26%</div></div>
@@ -209,7 +210,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
       📥 <strong>What to download:</strong> Amazon Ads → Reports → Sponsored Products → Search Term → Date range: <strong>60 days</strong> → Format: <strong>Summary</strong> → Download (.tsv file)
     </div>
     <label class="upload-zone" id="str-drop">
-      <input type="file" id="str-file" accept=".tsv,.csv,.txt" onchange="loadSTR(this)">
+      <input type="file" id="str-file" accept=".tsv,.csv,.txt,.xlsx,.xls" onchange="loadSTR(this)">
       <div class="upload-icon">📋</div>
       <div class="upload-title">Upload SP Search Term Report</div>
       <div class="upload-sub">Drag &amp; drop or click to select · .tsv or .csv</div>
@@ -274,13 +275,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;">
       <label class="upload-zone" id="bulk-drop" style="flex:1;min-width:260px;">
-        <input type="file" id="bulk-file" accept=".tsv,.csv,.txt" onchange="loadBulk(this)">
+        <input type="file" id="bulk-file" accept=".tsv,.csv,.txt,.xlsx,.xls" onchange="loadBulk(this)">
         <div class="upload-icon">📄</div>
         <div class="upload-title">Upload Bulk Sheet <span style="color:var(--muted);font-weight:400;">(required)</span></div>
         <div class="upload-sub">Bulk Sheet Export from Amazon Ads · .tsv</div>
       </label>
       <label class="upload-zone" id="str-bid-drop" style="flex:1;min-width:260px;">
-        <input type="file" id="str-bid-file" accept=".tsv,.csv,.txt" onchange="loadSTRforBids(this)">
+        <input type="file" id="str-bid-file" accept=".tsv,.csv,.txt,.xlsx,.xls" onchange="loadSTRforBids(this)">
         <div class="upload-icon">📋</div>
         <div class="upload-title">Upload Search Term Report <span style="color:var(--muted);font-weight:400;">(optional)</span></div>
         <div class="upload-sub">Improves bid accuracy using actual RPC data</div>
@@ -316,7 +317,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 </div>
 
 <!-- ═══ SETTINGS ═══ -->
-<div class="panel active" id="panel-settings">
+<div class="panel" id="panel-settings">
   <div class="settings-grid">
     <div class="s-block">
       <h3>🚀 GitHub Pages Publishing</h3>
@@ -325,7 +326,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
         <input class="token-input" type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxx">
         <button class="btn btn-sm" style="margin-left:8px;" onclick="saveToken()">Save</button>
         <button class="btn-outline btn-sm" style="margin-left:4px;" onclick="clearToken()">Clear</button>
-        <div id="token-status" style="font-size: 11px; margin-top: 6px; color: var(--green);">Token saved. You're set.</div>
+        <div id="token-status" style="font-size: 11px; margin-top: 6px; color: var(--green);">Token loaded from browser storage.</div>
       </div>
       <div class="s-row"><div><div class="s-label">Publish URL</div></div><div class="s-val" style="font-size:11px;font-family:monospace;">victor8825.github.io/ppc-dashboard</div></div>
       <div class="s-row"><div><div class="s-label">Repository</div></div><div class="s-val" style="font-size:11px;">Victor8825/ppc-dashboard</div></div>
@@ -376,6 +377,32 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 </div>
 
 <script>
+// ═══════════════ FILE READER — XLSX + TSV/CSV ═══════════════
+function readFileAsText(file){
+  return new Promise((resolve,reject)=>{
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(ext==='xlsx'||ext==='xls'){
+      const reader=new FileReader();
+      reader.onload=e=>{
+        try{
+          const wb=XLSX.read(e.target.result,{type:'binary'});
+          const ws=wb.Sheets[wb.SheetNames[0]];
+          // sheet_to_csv handles merged cells / empty cells cleanly
+          const csv=XLSX.utils.sheet_to_csv(ws,{FS:'\t'});
+          resolve(csv);
+        }catch(err){reject(err);}
+      };
+      reader.onerror=reject;
+      reader.readAsBinaryString(file);
+    }else{
+      const reader=new FileReader();
+      reader.onload=e=>resolve(e.target.result);
+      reader.onerror=reject;
+      reader.readAsText(file);
+    }
+  });
+}
+
 // ═══════════════ PRODUCT CATALOG ═══════════════
 const PRODUCTS=[
   {name:'Great Britain Flag',asin:'B0D9PMXHYW',portfolio:'Flags',price:6.99,ta:0.2197,be:0.3662,profit:2.56,bid:0.15,status:'clearance'},
@@ -547,11 +574,12 @@ function toAcos(v){
 }
 
 // ═══ SEARCH TERM REPORT ═══
-function loadSTR(input){
+async function loadSTR(input){
   const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const{rows}=parseTsv(e.target.result);
+  let text;
+  try{text=await readFileAsText(file);}catch(e){alert('Could not read file: '+e.message);return;}
+  {
+    const{rows}=parseTsv(text);
     strData=rows.filter(r=>{
       const term=colFind(r,['Customer Search Term','Search Term','customer search term']);
       return term&&term!=='Total';
@@ -573,8 +601,7 @@ function loadSTR(input){
     renderHarvest();
     document.getElementById('str-upload-zone').style.display='none';
     document.getElementById('str-results').style.display='';
-  };
-  reader.readAsText(file);
+  }
 }
 
 function getSTRFlag(d,targetAcos,beAcos,defaultPrice){
@@ -647,42 +674,38 @@ function renderHarvest(){
 }
 
 // ═══ BID OPTIMIZER — BULK SHEET ═══
-function loadBulk(input){
+async function loadBulk(input){
   const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const parsed=parseTsv(e.target.result);
-    bulkHeaders=parsed.headers;
-    bulkData=parsed.rows.filter(r=>{
-      const entity=(r['Entity']||r['entity']||'').toLowerCase();
-      return entity==='keyword';
-    });
-    populateProdSelect();
-    recalcBids();
-    document.getElementById('bid-results').style.display='';
-  };
-  reader.readAsText(file);
+  let text;
+  try{text=await readFileAsText(file);}catch(e){alert('Could not read file: '+e.message);return;}
+  const parsed=parseTsv(text);
+  bulkHeaders=parsed.headers;
+  bulkData=parsed.rows.filter(r=>{
+    const entity=(r['Entity']||r['entity']||'').toLowerCase();
+    return entity==='keyword';
+  });
+  populateProdSelect();
+  recalcBids();
+  document.getElementById('bid-results').style.display='';
 }
 
-function loadSTRforBids(input){
+async function loadSTRforBids(input){
   const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const{rows}=parseTsv(e.target.result);
-    strBidData=rows.filter(r=>{
-      const term=colFind(r,['Customer Search Term','Search Term','customer search term']);
-      return term&&term!=='Total';
-    }).map(r=>{
-      const kw=colFind(r,['Customer Search Term','Search Term']).toLowerCase().trim();
-      const clicks=toNum(colFind(r,['Clicks','clicks']));
-      const orders=toNum(colFind(r,['7 Day Total Orders (#)','Orders','orders']));
-      const rev=toNum(colFind(r,['7 Day Total Sales ($)','7 Day Total Sales','Revenue']));
-      const rpc=clicks>0?rev/clicks:0;
-      return{kw,clicks,orders,rev,rpc};
-    });
-    recalcBids();
-  };
-  reader.readAsText(file);
+  let text;
+  try{text=await readFileAsText(file);}catch(e){alert('Could not read file: '+e.message);return;}
+  const{rows}=parseTsv(text);
+  strBidData=rows.filter(r=>{
+    const term=colFind(r,['Customer Search Term','Search Term','customer search term']);
+    return term&&term!=='Total';
+  }).map(r=>{
+    const kw=colFind(r,['Customer Search Term','Search Term']).toLowerCase().trim();
+    const clicks=toNum(colFind(r,['Clicks','clicks']));
+    const orders=toNum(colFind(r,['7 Day Total Orders (#)','Orders','orders']));
+    const rev=toNum(colFind(r,['7 Day Total Sales ($)','7 Day Total Sales','Revenue']));
+    const rpc=clicks>0?rev/clicks:0;
+    return{kw,clicks,orders,rev,rpc};
+  });
+  recalcBids();
 }
 
 function populateProdSelect(){
@@ -858,15 +881,15 @@ async function publishToGitHub(){
   if(!el)return;
   el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over');});
   el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
-  el.addEventListener('drop',e=>{
+  el.addEventListener('drop',async e=>{
     e.preventDefault();el.classList.remove('drag-over');
     const file=e.dataTransfer.files[0];if(!file)return;
     const inputId=id==='str-drop'?'str-file':id==='bulk-drop'?'bulk-file':'str-bid-file';
     const inp=document.getElementById(inputId);
     const dt=new DataTransfer();dt.items.add(file);inp.files=dt.files;
-    if(id==='str-drop')loadSTR(inp);
-    else if(id==='bulk-drop')loadBulk(inp);
-    else loadSTRforBids(inp);
+    if(id==='str-drop')await loadSTR(inp);
+    else if(id==='bulk-drop')await loadBulk(inp);
+    else await loadSTRforBids(inp);
   });
 });
 
