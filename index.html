@@ -209,13 +209,14 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 <!-- ═══ SEARCH TERMS ═══ -->
 <div class="panel" id="panel-str">
   <div id="str-upload-zone">
-    <div class="alert ai">
-      📥 <strong>What to download:</strong> Amazon Ads → Reports → Sponsored Products → Search Term → Date range: <strong>60 days</strong> → Format: <strong>Summary</strong> → Download (.tsv file)
+    <div class="alert ag">
+      ⚡ <strong>Upload your Bulk Sheet here</strong> — it auto-populates this tab, Harvest, and Bid Optimizer all at once. One file, everything loaded.<br>
+      <span style="font-size:11px;opacity:.8;">Amazon Ads → Bulk Operations → Download → Sponsored Products → Download bulk sheet (.xlsx)</span>
     </div>
     <label class="upload-zone" id="str-drop">
       <input type="file" id="str-file" accept=".tsv,.csv,.txt,.xlsx,.xls" onchange="loadSTR(this)">
-      <div class="upload-icon">📋</div>
-      <div class="upload-title">Upload SP Search Term Report</div>
+      <div class="upload-icon">📄</div>
+      <div class="upload-title">Upload Bulk Sheet <span style="font-weight:400;color:var(--muted)">or Search Term Report</span></div>
       <div class="upload-sub">Drag &amp; drop or click to select · .xlsx · .tsv · .csv</div>
     </label>
   </div>
@@ -273,8 +274,9 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 <!-- ═══ BID OPTIMIZER ═══ -->
 <div class="panel" id="panel-bids">
   <div id="bid-upload-zone">
-    <div class="alert ai">
-      📥 <strong>What to download:</strong> Amazon Ads → Bulk Operations → Download → Sponsored Products → Download bulk sheet (.tsv). Then upload it below.
+    <div class="alert ag">
+      ⚡ <strong>Upload your Bulk Sheet</strong> — auto-populates keywords here AND search terms in the Search Terms &amp; Harvest tabs. One upload feeds the whole dashboard.<br>
+      <span style="font-size:11px;opacity:.8;">Amazon Ads → Bulk Operations → Download → Sponsored Products → Download bulk sheet (.xlsx)</span>
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;">
       <label class="upload-zone" id="bulk-drop" style="flex:1;min-width:260px;">
@@ -390,7 +392,6 @@ function readFileAsText(file){
         try{
           const wb=XLSX.read(e.target.result,{type:'binary'});
           const ws=wb.Sheets[wb.SheetNames[0]];
-          // sheet_to_csv handles merged cells / empty cells cleanly
           const csv=XLSX.utils.sheet_to_csv(ws,{FS:'\t'});
           resolve(csv);
         }catch(err){reject(err);}
@@ -403,6 +404,45 @@ function readFileAsText(file){
       reader.onerror=reject;
       reader.readAsText(file);
     }
+  });
+}
+
+function readExcelWB(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{resolve(XLSX.read(e.target.result,{type:'binary'}));}
+      catch(err){reject(err);}
+    };
+    reader.onerror=reject;
+    reader.readAsBinaryString(file);
+  });
+}
+
+function wbSheetToRows(wb,sheetName){
+  const ws=wb.Sheets[sheetName];
+  if(!ws)return{headers:[],rows:[]};
+  return parseTsv(XLSX.utils.sheet_to_csv(ws,{FS:'\t'}));
+}
+
+// Shared STR processor — used by both loadSTR and loadBulk
+function processSTRData(rows){
+  strData=rows.filter(r=>{
+    const term=colFind(r,['Customer Search Term','customer search term']);
+    return term&&term!=='Total'&&term!=='Customer Search Term';
+  }).map(r=>{
+    const term=colFind(r,['Customer Search Term','customer search term']);
+    const campaign=colFind(r,['Campaign Name (Informational only)','Campaign Name','campaign name']);
+    const match=colFind(r,['Match Type','match type']);
+    const clicks=toNum(colFind(r,['Clicks','clicks']));
+    const orders=toNum(colFind(r,['Orders','orders','7 Day Total Orders (#)','7 Day Total Orders']));
+    const spend=toNum(colFind(r,['Spend','spend','Cost']));
+    const rev=toNum(colFind(r,['Sales','7 Day Total Sales ($)','7 Day Total Sales','Revenue','revenue']));
+    const acosRaw=colFind(r,['ACOS','Total Advertising Cost of Sales (ACoS) ','Total Advertising Cost of Sales (ACoS)','ACoS','acos']);
+    let acos=toAcos(acosRaw);
+    if(acos===null&&clicks>0)acos=rev>0?spend/rev:null;
+    const rpc=clicks>0?rev/clicks:0;
+    return{term,campaign,match,clicks,orders,spend,rev,acos,rpc};
   });
 }
 
@@ -584,33 +624,23 @@ function toAcos(v){
 // ═══ SEARCH TERM REPORT ═══
 async function loadSTR(input){
   const file=input.files[0];if(!file)return;
+  // Check if this is the full bulk sheet
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='xlsx'||ext==='xls'){
+    const wb=await readExcelWB(file);
+    if(wb.SheetNames.includes('SP Search Term Report')||wb.SheetNames.includes('Sponsored Products Campaigns')){
+      await loadBulkFromWB(wb);return;
+    }
+  }
   let text;
   try{text=await readFileAsText(file);}catch(e){alert('Could not read file: '+e.message);return;}
-  {
-    const{rows}=parseTsv(text);
-    strData=rows.filter(r=>{
-      const term=colFind(r,['Customer Search Term','Search Term','customer search term']);
-      return term&&term!=='Total';
-    }).map(r=>{
-      const term=colFind(r,['Customer Search Term','Search Term','customer search term']);
-      const campaign=colFind(r,['Campaign Name','campaign name']);
-      const match=colFind(r,['Match Type','match type']);
-      const clicks=toNum(colFind(r,['Clicks','clicks']));
-      const orders=toNum(colFind(r,['7 Day Total Orders (#)','Orders','orders','7 Day Total Orders']));
-      const spend=toNum(colFind(r,['Spend','spend','Cost']));
-      const rev=toNum(colFind(r,['7 Day Total Sales ($)','7 Day Total Sales','Revenue','revenue']));
-      const acosRaw=colFind(r,['Total Advertising Cost of Sales (ACoS) ','Total Advertising Cost of Sales (ACoS)','ACoS','acos']);
-      let acos=toAcos(acosRaw);
-      if(acos===null&&clicks>0)acos=rev>0?spend/rev:null;
-      const rpc=clicks>0?rev/clicks:0;
-      return{term,campaign,match,clicks,orders,spend,rev,acos,rpc};
-    });
-    document.getElementById('str-search').value='';
-    renderSTR();
-    renderHarvest();
-    document.getElementById('str-upload-zone').style.display='none';
-    document.getElementById('str-results').style.display='';
-  }
+  const{rows}=parseTsv(text);
+  processSTRData(rows);
+  document.getElementById('str-search').value='';
+  renderSTR();
+  renderHarvest();
+  document.getElementById('str-upload-zone').style.display='none';
+  document.getElementById('str-results').style.display='';
 }
 
 function getSTRFlag(d,targetAcos,beAcos,defaultPrice){
@@ -683,16 +713,62 @@ function renderHarvest(){
 }
 
 // ═══ BID OPTIMIZER — BULK SHEET ═══
+async function loadBulkFromWB(wb){
+  // Parse campaigns/keywords sheet
+  if(wb.SheetNames.includes('Sponsored Products Campaigns')){
+    const parsed=wbSheetToRows(wb,'Sponsored Products Campaigns');
+    bulkHeaders=parsed.headers;
+    bulkData=parsed.rows.filter(r=>(r['Entity']||r['entity']||'').toLowerCase()==='keyword');
+  }
+  // Auto-populate search terms from SP Search Term Report tab
+  let strLoaded=false;
+  if(wb.SheetNames.includes('SP Search Term Report')){
+    const{rows}=wbSheetToRows(wb,'SP Search Term Report');
+    if(rows.length>0){
+      processSTRData(rows);
+      strLoaded=true;
+    }
+  }
+  // Show bid results
+  populateProdSelect();
+  recalcBids();
+  document.getElementById('bid-results').style.display='';
+  // Show STR results
+  if(strLoaded&&strData.length>0){
+    document.getElementById('str-search').value='';
+    renderSTR();
+    renderHarvest();
+    document.getElementById('str-upload-zone').style.display='none';
+    document.getElementById('str-results').style.display='';
+  }
+  // Show success banner
+  const kwCount=bulkData.length;
+  const strCount=strData.length;
+  const existing=document.getElementById('bulk-success-msg');
+  if(existing)existing.remove();
+  const msg=document.createElement('div');
+  msg.id='bulk-success-msg';
+  msg.className='alert ag';
+  msg.style.marginTop='12px';
+  msg.innerHTML=`&#10003; Bulk sheet loaded — <strong>${kwCount} keywords</strong> ready for bid optimization &nbsp;·&nbsp; <strong>${strCount} search terms</strong> loaded into Search Terms &amp; Harvest tabs automatically.`;
+  document.getElementById('bid-results').before(msg);
+}
+
 async function loadBulk(input){
   const file=input.files[0];if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='xlsx'||ext==='xls'){
+    let wb;
+    try{wb=await readExcelWB(file);}catch(e){alert('Could not read file: '+e.message);return;}
+    await loadBulkFromWB(wb);
+    return;
+  }
+  // TSV/CSV fallback
   let text;
   try{text=await readFileAsText(file);}catch(e){alert('Could not read file: '+e.message);return;}
   const parsed=parseTsv(text);
   bulkHeaders=parsed.headers;
-  bulkData=parsed.rows.filter(r=>{
-    const entity=(r['Entity']||r['entity']||'').toLowerCase();
-    return entity==='keyword';
-  });
+  bulkData=parsed.rows.filter(r=>(r['Entity']||r['entity']||'').toLowerCase()==='keyword');
   populateProdSelect();
   recalcBids();
   document.getElementById('bid-results').style.display='';
@@ -736,21 +812,37 @@ function getRpcData(kw){
   return strBidData.find(d=>d.kw===k)||null;
 }
 
-function calcBid(currentBid,kw){
+function calcBid(row,currentBid,kw){
   const p=getSelProduct();
   const T=p?p.ta:0.22;
+  // Priority 1: keyword-level data from bulk sheet row itself
+  const kClicks=toNum(row['Clicks']||0);
+  const kRev=toNum(row['Sales']||0);
+  const kOrders=toNum(row['Orders']||0);
+  if(kClicks>=5&&kRev>0){
+    const rpc=kRev/kClicks;
+    let conf,bid=rpc*T;
+    if(kClicks>=10&&kOrders>=2){conf='High';}
+    else{conf='Medium';bid=Math.min(bid,currentBid*1.30);}
+    bid=Math.min(Math.max(bid,FLOOR),CEILING);
+    return{bid:Math.round(bid*100)/100,conf,reason:'RPC from keyword data'};
+  }
+  if(kClicks>0&&kClicks<5){
+    const bid=Math.min(Math.max(currentBid*1.10,FLOOR),CEILING);
+    return{bid:Math.round(bid*100)/100,conf:'Low',reason:'<5 clicks — nudge +10%'};
+  }
+  // Priority 2: STR data (optional upload)
   const rpcData=getRpcData(kw);
   if(rpcData&&rpcData.clicks>=5){
     const{clicks,orders,rev,rpc}=rpcData;
-    let conf='Low',bid;
-    if(clicks>=10&&orders>=2){conf='High';bid=rpc*T;}
-    else if(clicks>=5&&orders>=1){conf='Medium';bid=rpc*T;bid=Math.min(bid,currentBid*1.30);}
+    let conf,bid=rpc*T;
+    if(clicks>=10&&orders>=2){conf='High';}
+    else if(clicks>=5&&orders>=1){conf='Medium';bid=Math.min(bid,currentBid*1.30);}
     else{conf='Low';bid=currentBid*1.10;}
     bid=Math.min(Math.max(bid,FLOOR),CEILING);
-    return{bid:Math.round(bid*100)/100,conf,reason:'RPC from uploaded STR'};
+    return{bid:Math.round(bid*100)/100,conf,reason:'RPC from STR report'};
   }
-  // No STR data — keep current bid or use default
-  return{bid:currentBid,conf:'—',reason:'No STR data — bid unchanged'};
+  return{bid:currentBid,conf:'—',reason:'No data — unchanged'};
 }
 
 function recalcBids(){
@@ -760,10 +852,10 @@ function recalcBids(){
   const tbl=document.getElementById('bid-table');
   tbl.innerHTML='';
   bulkData.forEach((row,i)=>{
-    const kw=colFind(row,['Keyword or Product Targeting','keyword or product targeting','Keyword','keyword','Customer Search Term']).trim();
+    const kw=colFind(row,['Keyword Text','Keyword or Product Targeting','keyword or product targeting','Keyword','keyword']).trim();
     const currentBid=toNum(colFind(row,['Bid','bid','Maximum Bid']));
     if(!kw)return;
-    const{bid:newBid,conf,reason}=calcBid(currentBid,kw);
+    const{bid:newBid,conf,reason}=calcBid(row,currentBid,kw);
     const pct=currentBid>0?((newBid-currentBid)/currentBid*100).toFixed(1):0;
     const pc=pct>0?'pcu':pct<0?'pcd':'pcn';
     const ps=pct>0?'+':'';
@@ -787,7 +879,7 @@ function downloadBidFile(){
   bulkData.forEach((row,i)=>{
     const inp=document.querySelector(`#bid-table .bid-input[data-idx="${i}"]`);
     const newBid=inp?parseFloat(inp.value):toNum(colFind(row,['Bid','bid']));
-    const kw=colFind(row,['Keyword or Product Targeting','Keyword','keyword']);
+    const kw=colFind(row,['Keyword Text','Keyword or Product Targeting','Keyword','keyword']);
     if(!kw)return;
     const r=[
       'Keyword',
